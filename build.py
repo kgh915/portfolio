@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
-import os
+import os,json,html
 OUT=os.path.dirname(os.path.abspath(__file__))
+# style.css 캐시 버스팅용 — 빌드할 때마다 파일 수정시각을 쿼리스트링으로 붙여서, CSS만 바꾸고 재빌드해도
+# 브라우저가 예전 캐시된 CSS를 계속 쓰는 문제(여러 번 반복됐던 버그)를 원천적으로 막는다.
+CSS_VER=int(os.path.getmtime(os.path.join(OUT,"style.css"))) if os.path.exists(os.path.join(OUT,"style.css")) else 0
+
+# 이미지/영상 캐시 버스팅용 — style.css와 같은 이유. 같은 파일명으로 사진·영상만 교체했을 때
+# 브라우저가 예전 캐시를 계속 보여주는 문제(선크림·음료수 커버 이미지 교체 때 실제로 발생)를 막는다.
+def av(path):
+    full=os.path.join(OUT,"assets",path)
+    v=int(os.path.getmtime(full)) if os.path.exists(full) else 0
+    return f"assets/{path}?v={v}"
 
 # 폴더에서 prefix+번호(ph01, ph02 …) 파일을 연속으로 자동 수집 (jpg/png/mp4)
 def autoseq(prefix):
@@ -18,61 +28,134 @@ package=["pk01","pk01-1","pk02","pk02-1","pk04","pk04-1","pk05","pk05-1","pk03"]
 editorial=["ed01","ed02","ed03","ed04","ed05","ed06","ed07","ed08"]
 photo=autoseq("ph")  # assets 폴더의 ph01,ph02… 를 자동 인식 (파일만 넣으면 추가됨)
 
-# 05 상품기획 = 신제품 + 이벤트 (구조화된 잡지형: 핵심 포인트 + 성과 지표)
-planning=[
- dict(img="pj01",
-   title="신제품 기획 — 새해선물 ‘도깨비 소원카드’",
-   lead="드라마 ‘도깨비’에서 착안한 새해 선물입니다. 전통 도깨비 문양과 부적 스타일의 소망 문구를 결합해, 가볍고 유쾌하게 주고받는 이벤트성 선물로 기획했습니다.",
-   role="기획 · 디자인 · 촬영 · 일정관리", contrib="기여도 100%",
-   points=[
-     "앞면은 전통 도깨비 문양, 뒷면은 ‘가족건강·로또일등·시험합격’ 소망 문구를 부적 스타일로 디자인",
-     "주고받고 싶게 만드는 이벤트성 컨셉으로 자발적 공유·재구매 유도",
-     "아이디어 발굴부터 디자인·촬영·일정 관리까지 전 과정 단독으로 진행",
-   ],
-   results=[("조기 마감","예상 판매량을 초과하는 주문"),("재문의 지속","판매 종료 후에도 추가 주문 문의")]),
- dict(img="pj03",
-   title="이벤트 상품 기획 — 악성 재고를 효자 상품으로",
-   lead="폐기 직전의 악성 재고였던 크리스탈·유리 제품을, 캘리그라피 문구와 포인트 이미지를 더한 감성 기성품 라인으로 재기획했습니다.",
-   role="기획 · 디자인", contrib="기여도 100%",
-   points=[
-     "1:1 맞춤 제작 방식에서 기성품 라인으로 전환해 대량 생산 체계를 확보",
-     "이벤트·기념품 시장을 겨냥해 상품 포지셔닝과 컨셉을 재정의",
-   ],
-   results=[("작업시간 70%↓","기존 1:1 제작 대비"),("매출 200%↑","이전 3년 평균 판매량 대비")]),
+# (구) 05 상품기획 섹션은 폐지됨 — 도깨비 소원카드는 "직접 기획한 출시 제품" 그리드로 이동(판매 종료 표시),
+# 크리스탈 이벤트 상품은 그 그리드에 이미 있는 스모크크리스탈 상패와 겹쳐서 삭제함. products=[...] 리스트 참고.
+
+# 실제 출시·판매된 제품 — 청송기획 재직 중 기획에 참여해 실제로 자사몰에서 판매 중인 제품 5종.
+# 링크를 인터뷰 위젯 등에 직접 넣기보다, 사진은 이 사이트 안에서 깔끔하게 보여주고 "실제 제품 보러가기"
+# 링크는 보조 증빙용으로만 작게 붙이는 방식(의뢰인 확정 방향).
+products=[
+ dict(img="prod01",title="골드바 감사패",achieve="출시 후 매출 TOP3",
+   concept="왕관 모양 프레임으로 얇은 골드바에 입체감과 고급스러움을 더했습니다.",
+   url="https://csgold.co.kr/product/detail.html?product_no=3252&cate_no=109&display_group=1"),
+ dict(img="prod02",title="순금 돌반지 기념 액자",achieve="자사몰 돌선물 판매 1위",
+   concept="투명 필름 인쇄로 돌 특유의 맑은 느낌을 살리고 제작 방식도 간소화했습니다.",
+   url="https://csgold.co.kr/product/detail.html?product_no=3747&cate_no=48&display_group=1"),
+ dict(img="prod03",title="우드 스탠드 감사패",achieve="입체적 디자인 개발",
+   concept="아크릴에 배경을 인쇄하고 크기가 다른 패널을 겹쳐 입체감을 살렸습니다.",
+   url="https://csgold.co.kr/product/detail.html?product_no=2999&cate_no=146&display_group=1"),
+ dict(img="prod05",title="스모크 크리스탈 상패",achieve="명함 상패 매출 1위",
+   concept="명함과 인쇄를 결합한 레이아웃을 처음 시도한 제품입니다.",
+   url="https://csgold.co.kr/product/detail.html?product_no=28&cate_no=155&display_group=1"),
+ dict(img="prod06",title="컬러 미니 크리스탈 상패",achieve="이벤트 첫날 100개+ 판매",
+   concept="빠른 출고를 위해 기성 제품으로 디자인한 이벤트용 선물입니다.",
+   url="https://csgold.co.kr/product/detail.html?product_no=3343&cate_no=146&display_group=1"),
+ dict(img="pj01",title="도깨비 소원카드",achieve="조기 마감 · 재문의 지속",
+   concept="드라마 '도깨비'에서 착안한 부적 스타일의 이벤트성 새해 선물입니다.",
+   url=None),
 ]
 
 # 06 자사몰 고도화 — 플래그십(05와 동일 폼: 텍스트 + 아래 요약)
 project=dict(img="pj02",
-   title="설치 없는 ‘셀프 디자인 편집 시스템’ 구축",
-   lead="고객이 별도 설치 없이 웹에서 직접 텍스트·로고·이미지를 편집하고 즉시 제작까지 진행하는 셀프 편집 시스템을 도입·총괄한 자사몰 고도화 프로젝트입니다. 외주 개발사 선정 및 미팅 진행부터 사내 프로젝트 팀과의 협업·일정 관리, 도입 후 운영까지 — 프로젝트 전 과정을 총괄 PM으로 직접 이끌었습니다.",
-   role="총괄 PM · 기획", contrib="기여도 100% · 총괄 PM",
-   points=[
-     "현황 분석·기획 — 기존 리드타임(주문→요청→시안→피드백→수정)을 진단하고 셀프 편집 시스템의 요건을 정의",
-     "외주 개발사 선정·계약 — 업체 비교·선정과 미팅·계약 조건 협의를 직접 진행",
-     "구축·협업 — 사내 프로젝트 팀(3인)과 개발사 사이 커뮤니케이션 허브로 기능·일정을 조율",
-     "도입·운영 — 시스템 적용 후 운영을 안정화하고 매출 기여까지 확인",
-   ],
-   stats=[
-     ("프로젝트 기간","2025.03 – 2025.09","예상 일정보다 4개월 단축 완료"),
-     ("역할","프로젝트 총괄","외주업체 및 사내 프로젝트 팀(3인) 핸들링"),
-     ("성과","매출 30%+ 기여","시스템 도입 후 추가 매출"),
-   ],
-   problem=["주문 → 고객 요청 → 시안 제작 → 메일 피드백 → 수정의 반복","긴 리드타임으로 응대 부담과 제작 지연 발생"],
-   solution=["주문 → 고객 셀프 디자인 → 제작 → 출고로 단순화","설치 없이 웹에서 직접 편집해 즉시 제작로 연결","작업 속도 향상으로 제작·응대 효율 개선","고객·직원 만족도 동반 상승"])
+   title="설치 없이 웹에서 바로 편집하고 제작까지",
+   lead="회사 내 핵심 부서들과 소통해 기존 시스템의 문제점을 파악하고, 고객이 직접 편집할 수 있는 셀프 디자인 시스템 구축 프로젝트를 진행했습니다. 예상보다 2개월 앞당겨 완료하였고, 도입 이후 매출에도 30% 이상 기여하였다는 공식 보고서를 확인하였습니다.",
+   # 인터뷰(4️⃣-a/b/c)와 겹치더라도 이 카드만 봤을 때 너무 간략해 보인다는 피드백으로 진행 과정을 다시 보충함.
+   steps=["외주 개발사 선정·계약과 사내 팀(3인) 핸들링","도입 후 운영 안정화 관리로 오류 1% 미만 유지 및 매출 기여"],
+   roles="총괄 PM",
+   # 예전엔 (라벨,값,설명) 3단 카드였는데 "총괄 PM"류 단어가 role 배지와 겹치고 박스가 길어 보인다는
+   # 피드백으로, 카드 대신 짧은 배지 문장으로 압축함. 겹치던 "프로젝트 총괄"/"시스템 도입 후" 등 수식어는 제거.
+   # 역할 배지+사실 배지를 한 줄에 같이 나열하므로(roles도 badges에 합침) 너무 길어지지 않게 최소한만 남김.
+   stats=["2025.03–2025.09","매출 30%+ 기여"],
+   problem=["주문 → 고객 요청 → 시안 제작 → 메일 피드백 → 수정의 반복","긴 리드타임과 디자이너 개별 응대로 인한 인건비 부담 및 제작 지연 발생"],
+   solution=["주문 → 고객 셀프 디자인 → 제작 → 출고로 단순화","인건비 절감 및 응대로 인한 스트레스 감소와 제작 손실 방지","정확하고 빠른 진행으로 고객·직원 만족도 상승"])
 
 career=[("2002.02–2005.05","광선기공사","디자인 · 사원","홈페이지 제작·관리, 제품 촬영, 카탈로그 디자인"),
  ("2005.07–2010.09","프린센스 스튜디오","촬영·편집 · 실장","제품·웨딩·프로필 촬영, 리터칭 및 편집"),
  ("2012.02–2015.12","(주)가주 / 쿨맥스","웹·편집 · 대리","카드뉴스·홍보물 디자인, 제품 촬영, 블로그 관리"),
- ("2016.02–2019.04","(주)청송기획","디자인 및 마케팅 총괄 · 실장","신제품 기획·개발, 마케팅 총괄 전략, 고객 관리"),
  ("2020.05–2021.04","이원의료기","웹·편집 · 과장","상세페이지 리뉴얼, 패키지·카탈로그, 이벤트 상품 기획"),
- ("2022.09–2026.04","(주)주렁주렁 <span class='conote'>(주)청송기획 자매회사</span>","기획·디자인 총괄 · 과장","UI/UX 리뉴얼, 신규 상품 개발, VIP 관리, 자사몰 고도화 총괄")]
+ ("2016.02–2019.04<br>2022.09–2026.04","(주)청송기획 / (주)주렁주렁 <span class='conote'>합산 6년 9개월 · 재입사</span>","기획·디자인 총괄 · 실장 → 과장","신제품 기획·개발, 비주얼 디자인 및 마케팅 총괄, 재입사 후 자사몰 고도화 프로젝트 총괄 PM")]
 
-minimap=[("01","상세페이지 디자인","s01"),
- ("02","패키지 디자인","s02"),
- ("03","편집디자인","s03"),
- ("04","사진 촬영","s04"),
- ("05","상품기획","s05"),
- ("06","자사몰 고도화 프로젝트","s06")]
+
+# AI 활용 작업물 — 실제 판매 중인 제품 5종을 소재로, 브랜드와 무관하게 개인적으로 진행한 AI 이미지·영상 샘플 작업
+# 5종 모두 kind="video"(완성 영상 + 콘셉트 이미지 그리드) 구조로 통일됨(2026-09-18)
+ai_works=[
+ dict(title="선크림",kind="video",still="ai01-still.jpg",src="ai01.mp4",
+   concepts=[dict(thumb="ai01-6-thumb.jpg",full="ai01-6.jpg"),
+     dict(thumb="ai01-1-thumb.jpg",full="ai01-1.jpg"),dict(thumb="ai01-7-thumb.jpg",full="ai01-7.jpg"),
+     dict(thumb="ai01-8-thumb.jpg",full="ai01-8.jpg"),dict(thumb="ai01-5-thumb.jpg",full="ai01-5.jpg"),
+     dict(thumb="ai01-3-thumb.jpg",full="ai01-3.jpg"),dict(thumb="ai01-2-thumb.jpg",full="ai01-2.jpg"),
+     dict(thumb="ai01-9-thumb.jpg",full="ai01-9.jpg")],
+   concept="여름 해변에서 쓰는 산뜻한 선크림을 콘셉트로, 모래·물방울·햇살 질감을 강조해 만든 브랜드 광고 영상입니다.",
+   flow="제품 이미지를 기반으로 AI 이미지 생성 → 배경·질감 연출 컷 제작 → AI 영상 생성으로 움직임을 더해 편집",
+   keywords=["여름","해변","모래질감","워터드롭"]),
+ dict(title="에너지 음료",kind="video",still="ai02-still.jpg",src="ai02.mp4",
+   concepts=[dict(thumb="ai02-8-thumb.jpg",full="ai02-8.jpg"),
+     dict(thumb="ai02-1-thumb.jpg",full="ai02-1.jpg"),
+     dict(thumb="ai02-2-thumb.jpg",full="ai02-2.jpg"),dict(thumb="ai02-3-thumb.jpg",full="ai02-3.jpg"),
+     dict(thumb="ai02-4-thumb.jpg",full="ai02-4.jpg"),dict(thumb="ai02-5-thumb.jpg",full="ai02-5.jpg"),
+     dict(thumb="ai02-6-thumb.jpg",full="ai02-6.jpg"),
+     dict(thumb="ai02-7-thumb.jpg",full="ai02-7.jpg")],
+   concept="탄산감과 과즙의 청량함을 강조한 에너지 음료 광고 영상입니다. 캔이 회전하고 과즙이 튀는 컷으로 시원한 무드를 표현했습니다.",
+   flow="브랜드 콘셉트 이미지 제작 → 캔 회전·과즙 스플래시 등 여러 클립을 AI 영상으로 생성 → 리듬감 있게 편집",
+   keywords=["탄산","과즙","스플래시","청량감"]),
+ dict(title="효모 샴푸",kind="video",still="ai03-still.jpg",src="ai03.mp4",
+   concepts=[dict(thumb="ai03-5-thumb.jpg",full="ai03-5.jpg"),
+     dict(thumb="ai03-4-thumb.jpg",full="ai03-4.jpg"),
+     dict(thumb="ai03-3-thumb.jpg",full="ai03-3.jpg"),
+     dict(thumb="ai03-8-thumb.jpg",full="ai03-8.jpg"),
+     dict(thumb="ai03-9-thumb.jpg",full="ai03-9.jpg"),dict(thumb="ai03-6-thumb.jpg",full="ai03-6.jpg"),
+     dict(thumb="ai03-11-thumb.jpg",full="ai03-11.jpg"),dict(thumb="ai03-10-thumb.jpg",full="ai03-10.jpg"),
+     dict(thumb="ai03-7-thumb.jpg",full="ai03-7.jpg"),
+     dict(thumb="ai03-1-thumb.jpg",full="ai03-1.jpg")],
+   concept="천연 효모 성분을 강조한 프리미엄 헤어케어 브랜드 영상입니다. 습기 찬 유리와 풍성한 거품으로 부드러운 무드를 표현했습니다.",
+   flow="브랜드 콘셉트 이미지 제작 → 펌핑·거품·습기 연출 컷을 AI 영상으로 각각 생성 → 하나의 흐름으로 편집",
+   keywords=["프리미엄","습기","거품","무드컷"]),
+ dict(title="망고바",kind="video",still="ai04-still.jpg",src="ai04.mp4",
+   concepts=[dict(thumb="ai04-3-thumb.jpg",full="ai04-3.jpg"),
+     dict(thumb="ai04-8-thumb.jpg",full="ai04-8.jpg"),dict(thumb="ai04-9-thumb.jpg",full="ai04-9.jpg"),
+     dict(thumb="ai04-4-thumb.jpg",full="ai04-4.jpg"),dict(thumb="ai04-1-thumb.jpg",full="ai04-1.jpg"),
+     dict(thumb="ai04-5-thumb.jpg",full="ai04-5.jpg"),
+     dict(thumb="ai04-6-thumb.jpg",full="ai04-6.jpg"),dict(thumb="ai04-7-thumb.jpg",full="ai04-7.jpg")],
+   concept="실제 판매 중인 망고 아이스바를 소재로, 해변·카페·가족 일상 등 다양한 무드의 포스터와 라이프스타일 컷을 담은 광고 영상입니다.",
+   flow="제품 이미지를 기반으로 다양한 무드의 AI 콘셉트 이미지 생성 → AI 영상 생성으로 완성 영상 제작",
+   keywords=["여름","라이프스타일","포스터","무드컷"]),
+ dict(title="텀블러",kind="video",still="ai05-still.jpg",src="ai05.mp4",
+   concepts=[dict(thumb="ai05-2-thumb.jpg",full="ai05-2.jpg"),dict(thumb="ai05-1-thumb.jpg",full="ai05-1.jpg"),
+     dict(thumb="ai05-5-thumb.jpg",full="ai05-5.jpg"),dict(thumb="ai05-3-thumb.jpg",full="ai05-3.jpg"),
+     dict(thumb="ai05-4-thumb.jpg",full="ai05-4.jpg"),dict(thumb="ai05-6-thumb.jpg",full="ai05-6.jpg")],
+   concept="컬러풀한 홈 스타일링 속에 자연스럽게 녹아드는 라이프스타일 텀블러 콘셉트 비주얼입니다.",
+   flow="레퍼런스 무드보드를 바탕으로 AI 이미지 생성 → 합성·보정으로 완성도 마무리",
+   keywords=["라이프스타일","컬러풀","무드샷"]),
+]
+
+# 인터뷰 Q&A — 채팅형, 첫 인사 → 5문항 → 마무리 인사 순서로 진행되고, 끝나면 3초 뒤 처음부터 다시 재생됨
+# 각 항목은 (질문, 답변) 튜플. q 또는 a를 None으로 두면 그쪽 말풍선 없이 반대쪽만 혼자 나온다(첫/끝 인사용).
+# 상대방의 인사와 첫 질문은 한 세트라 같은 말풍선 안에 줄바꿈(\n)으로 묶어서 하나로 표시한다.
+interview=[
+ (None,
+  "안녕하세요. 반갑습니다. 디자이너 김근하 입니다."),
+ ("네, 반갑습니다.\n디자인만 하신게 아니라 기획·촬영·신제품 개발까지 맡아오셨네요?",
+  "디자이너로 시작했지만, 경력이 쌓이면서 자연스럽게 영역이 넓어지게 되었습니다. 평소 업무 관련된 분야에 호기심이 많은 편이라, 더 적극적으로 새로운 걸 해보고 싶은 마음도 있었어요. 그 과정에서 디자인을 대하는 생각도 더 깊어지고 그 자체를 즐길 수 있었습니다."),
+ ("같은 회사에 재입사하신 이력이 눈에 띄네요?",
+  "네, 청송기획에서 3년 2개월 근무한 뒤, 같은 대표님의 사업장인 주렁주렁에서 다시 합류하게 되었습니다. 두 회사를 합치면 총 6년 9개월 정도 근무하였습니다. 그만큼 신뢰를 쌓아온 시간이었다는 게, 지금 생각해도 뿌듯합니다."),
+ ("전 직장에서 총괄하신 자사몰 시스템 구축, 구체적으로 어떤 프로젝트였나요?",
+  "고객이 별도 설치 없이 웹에서 직접 로고나 이미지, 텍스트를 편집해서 바로 제작까지 진행할 수 있는 셀프 편집 시스템을 구축하는 일이었어요. 원래는 주문 → 요청 → 시안 → 피드백 → 수정을 거치는 방식이었는데, 그 과정을 고객이 직접 만들고 바로 진행하는 구조로 바꾸는 작업이었습니다."),
+ ("개발자가 아니신데 부담스럽진 않으셨나요?",
+  "외주업체와 진행하는 장기 프로젝트라 걱정이 없었던 건 아니었지만, 회사에서 저에게 맡겨주신 데는 이유가 있을 거라 생각했고 기왕 맡은 일이니 제대로 해내고 싶은 마음이 컸어요. 그 덕분에 오히려 더 꼼꼼하게 챙길 수 있었던 것 같습니다. 나중에 대표님께 저에게 맡기신 이유를 여쭤보니 회사 시스템을 가장 잘 아는 사람이기도 하고 꼼꼼하고 책임감있게 잘 처리해줄거라 믿고 맡길 수 있었다고 말씀해 주셨습니다."),
+ ("큰 프로젝트면 회사에서 기대가 컸을 텐데, 도입 후 만족스러웠나요?",
+  "네, 처음 예상했던 기간보다 2개월 앞당겨 자사몰에 도입되었고, 오류도 첫 달 5% 미만에서 안정화 작업 이후 1% 미만으로 확인되었어요. 그 과정에서 외주업체에 100여 건 넘게 질문·수정·보완을 요청했는데, 담당자분이 \"이렇게까지 꼼꼼하게 확인하시는 경우는 드물다\"고 하시더라고요. 칭찬인지 그만 좀 괴롭히라는 뜻인지는 알면서도 모른 척했습니다. 도입 후엔 매출에도 30% 이상 기여했다는 공식 자료를 마케팅팀에서 받아볼 수 있었어요. 주변에서도 칭찬을 많이 받았고, 개인적으로도 만족스러운 프로젝트였습니다."),
+ ("그 프로젝트 외에, 기억에 남는 작업물이 있으신가요?",
+  "네, 신제품 기획과 개발이요. 청송기획과 주렁주렁에서 여러 제품을 맡았는데, 매출 상위권까지 올린 제품도 여럿 있었고, 포상금도 받았습니다. 지금도 그때 만든 제품들이 여전히 회사 매출에 크게 기여하고 있다는 게 뿌듯합니다."),
+ ("외주 업체나 다른 팀과 함께 일할 때, 특별히 신경 쓰시는 부분이 있나요?",
+  "서로 쓰는 말이 다르다는 걸 인정하는 데서 시작합니다. 제 입장만 말하면 평행선을 달리기 쉬워서, 상대방이 왜 그렇게 말하는지부터 이해하고 그 부분을 먼저 풀어드린 다음 제 뜻을 전달하는 편이에요. 거기에 화면이든 샘플이든 눈에 보이는 걸 먼저 만들어 보여드리면, 회의도 짧아지고 서로 얼굴 붉힐 일도 없습니다."),
+ ("일하면서 가장 막막했던 순간은 언제였고, 어떻게 풀어가셨어요?",
+  "보통은 재고 위험을 최소화하기 위해 악성 재고를 활용해 신제품을 기획하는 편인데, 새로운 소재로 신제품을 기획하게 됐을 때는 시장 반응을 알 수 없는 상황에서 발주량을 정하는 게 쉽지 않았습니다. 그럴 때 좀 막막하죠. 어떻게 해야 하나 고민하다가 펀딩 시스템을 이용해보면 좋을 것 같아 회사에 제안하게 되었고, 와디즈 펀딩을 통해 선주문을 받을 수 있었어요. 시장 반응이 좋아 정식 신제품으로도 이어졌고요. 어려운 상황에서도 해결할 방법을 찾아, 새로운 시도를 두려워하지 않고 가능한 방법을 최대한 찾아내려 노력하는 편입니다."),
+ ("AI를 이용해서 작업을 해보셨나요?",
+  "네, 요즘은 시간 날 때마다 이것저것 새로 나온 AI를 찾아보고 직접 만들어보는 재미에 푹 빠져 있어요. 해보고 싶은 것도 많고, 이젠 없어서는 안 될 든든한 동료가 되었습니다. AI 덕분에 영상광고도 많이 만들어보고, 하루하루가 기대됩니다. 실제 판매 중인 제품 다섯 개를 소재로 AI 이미지와 영상까지 만들어봤는데, 바로 아래에서 보실 수 있습니다."),
+ ("다음 회사에 바라는 점이 있으신가요?",
+  "회사가 인재에게 바라는 건 결국 함께 성장해 줄 사람이라고 생각합니다. 저 역시 바라는 게 있다면, 제가 만든 결과가 제대로 존중받고 그 성장을 함께 나누는 경험입니다. 또한, 세대와 경력에 상관없이 의견을 자유롭게 주고받을 수 있는 문화를 기대하고 있습니다. 벽 없는 소통이야말로 서로에게 신선한 자극이 되어주기 때문입니다. 그 안에서 얻는 성취감이야말로 다음 결과를 만드는 가장 확실한 동기가 될 것입니다. 그렇게 서로를 존중하고 함께 성장하는 관계라면, 1+1이 2가 아니라 3이 되는 결과로 이어질 거라 믿습니다."),
+ (None,
+  "여기까지, 이력서 한 장에는 다 담지 못했던 조금 더 저다운 이야기를 담아보았습니다. 조금이나마 전해졌으면 좋겠습니다. 아래 작업물을 정리해 두었으니 편하게 둘러봐 주세요.")]
 
 def masonry(ids):
     return '<div class="masonry">'+''.join(f'<div class="ph" data-full="assets/{i}.jpg"><img src="assets/{i}.jpg" loading="lazy" alt=""></div>' for i in ids)+'</div>'
@@ -81,7 +164,58 @@ def masonry(ids):
 def tiles(ids):
     return '<div class="tiles">'+''.join(f'<div class="tile" data-full="assets/{i}.jpg"><img src="assets/{i}.jpg" loading="lazy" alt=""></div>' for i in ids)+'</div>'
 
-mm_html=''.join(f'''<a class="mm" href="#{a}"><span class="n">{n}</span><span class="t">{t}</span><span class="ar">→</span></a>''' for (n,t,a) in minimap)
+# 실제 출시 제품 카드 — 사진(클릭 시 크게 보기)+제품명+역할 배지(1개)+성과 배지+컨셉 한 줄+실제 판매 페이지 링크(보조용, 새 탭)
+# 전 제품 기획·촬영·상세페이지까지 의뢰인이 직접 담당해서, 역할 배지는 공통으로 고정.
+# 배지 3개로 나눴더니 너저분해 보인다는 피드백으로 "기획·촬영·상세페이지" 하나로 합침.
+# achieve(성과)는 제품마다 있을 수도 없을 수도 있어서(예: 04번은 없음) None이면 배지를 아예 안 넣는다.
+# url도 없을 수 있음(판매 종료된 제품 — 예: 도깨비 소원카드) → 그럴 땐 링크 줄 자체를 아예 안 넣는다.
+PROD_ROLES="기획·촬영·상세페이지"
+def product_card(p):
+    roles_html=f'<span class="contrib">{PROD_ROLES}</span>'
+    achieve_html=f'<span class="achieve">{p["achieve"]}</span>' if p.get("achieve") else ''
+    link_html=(f'<a class="prodlink" href="{p["url"]}" target="_blank" rel="noopener">실제 제품 보러가기 ↗</a>'
+               if p.get("url") else '')
+    return f'''<div class="prodcard reveal">
+<div class="prodimg" data-full="assets/{p["img"]}.jpg"><img src="assets/{p["img"]}.jpg" loading="lazy" alt="{p["title"]}"></div>
+<div class="prodbd"><h5>{p["title"]}</h5><div class="prodbadges">{roles_html}{achieve_html}</div><p>{p["concept"]}</p>{link_html}</div>
+</div>'''
+products_html=''.join(product_card(p) for p in products)
+
+# AI 활용 작업물 카드 — 왼쪽은 대표 미디어(영상 또는 대표 이미지) 한 타일, 오른쪽엔 컨셉·작업방식·키워드.
+# 대표 미디어 옆에 AI 생성 콘셉트 이미지가 더 있으면(영상·이미지 작업 모두 공통) 같은 방식의 썸네일 그리드로 노출됨.
+def kw_html(keywords):
+    return '<div class="aikw">'+''.join(f'<span>{k}</span>' for k in keywords)+'</div>'
+def ai_card(w):
+    if w["kind"]=="video":
+        media=(f'<div class="aimedia" data-kind="video" data-src="{av(w["src"])}" data-poster="{av(w["still"])}">'
+               f'<img src="{av(w["still"])}" loading="lazy" alt="{w["title"]} 광고 영상"><span class="aitag">광고 영상</span><span class="playbadge">▶</span></div>')
+    else:
+        media=(f'<div class="aimedia" data-kind="image" data-src="{av(w["img"])}">'
+               f'<img src="{av(w["img"])}" loading="lazy" alt="{w["title"]}"></div>')
+    # 콘셉트 이미지는 여러 장이 나올 수 있어 목록으로 관리 — 옆으로 나란히 나열, 새 이미지가 추가되면 여기에 더 붙으면 됨
+    # 이미지가 적을 때(1~2장)는 좌측 대표 미디어 높이에 맞춰 큼직한 정사각형으로, 많아지면(3장+) 작은 타일로 자동 전환
+    concepts=w.get("concepts") or []
+    if concepts:
+        tiles=''.join(
+            f'<div class="aimedia sub" data-kind="image" data-src="{av(c["full"])}">'
+            f'<img src="{av(c["thumb"])}" loading="lazy" alt="{w["title"]} AI 생성 콘셉트 이미지"></div>'
+            for c in concepts)
+        concepts_cls="aiconcepts featured" if len(concepts)<=2 else "aiconcepts many"
+        sub=f'<div class="{concepts_cls}">{tiles}</div>'
+    else:
+        sub=""
+    return f'''<div class="airow reveal">{media}
+<div class="aibd"><h3>{w["title"]}</h3>
+<p class="lead-p">{w["concept"]}</p>
+<div class="aiflow"><b>작업 방식</b>{w["flow"]}</div>
+{kw_html(w["keywords"])}{sub}</div></div>'''
+ai_html=''.join(ai_card(w) for w in ai_works)
+
+# 인터뷰 채팅형 Q&A — 실제 채팅창처럼 새 질문·답변이 아래에 쌓이고, 박스가 자동으로 아래로 스크롤되면서
+# 이전 대화는 위쪽으로 사라짐. 가만히 두면 자동 재생, 클릭하면 타이핑이 그 자리에서 멈추고 스크롤로 이미
+# 타이핑된 내용을 자유롭게 볼 수 있음 — 다시 클릭하거나, 마우스가 영역을 벗어나거나, 5초간 마우스를 움직이지
+# 않고 그대로 두면 멈췄던 지점부터 이어서 타이핑됨
+chat_qa_json=html.escape(json.dumps(interview,ensure_ascii=False),quote=True)
 
 # 상세페이지 — 목업 쇼케이스(세로 나열)
 detail_html=''.join(f'<figure class="dshot"><img src="assets/{i}.jpg" loading="lazy" alt="상세페이지 디자인 목업"></figure>' for i in detail_imgs)
@@ -140,32 +274,25 @@ def viewer(ids):
     <div class="vthumbs">{thumbs}</div>
   </div>'''
 
-# 상품기획 잡지형(이미지 좌측 · 구조화 설명 우측)
-def points_ul(points):
-    return '<ul class="points">'+''.join(f'<li>{p}</li>' for p in points)+'</ul>'
-def res_bar(results):
-    return '<div class="resbar">'+''.join(f'<div class="res"><div class="v">{v}</div><div class="k">{k}</div></div>' for (v,k) in results)+'</div>'
-def plan_row(p):
-    return f'''<div class="magrow reveal"><div class="im" data-full="assets/{p['img']}.jpg"><img src="assets/{p['img']}.jpg" loading="lazy" alt="{p['title']}"></div>
-<div class="bd"><h3>{p['title']}</h3><p class="lead-p">{p['lead']}</p>{points_ul(p['points'])}<div class="rolebar"><span class="role">{p['role']}</span><span class="contrib">{p['contrib']}</span></div>{res_bar(p['results'])}</div></div>'''
-plan_html=''.join(plan_row(p) for p in planning)
-
-# 자사몰 고도화 — 05와 동일 폼(텍스트) + 아래 요약(지표 카드 · 기존/개선 비교)
+# 자사몰 고도화 — 아래 요약(지표 카드 · 기존/개선 비교)
 pj=project
-stat_html=''.join(f'<div class="statcard"><div class="cap">{c}</div><div class="big">{v}</div><div class="lab">{s}</div></div>' for (c,v,s) in pj['stats'])
+# 우측 텍스트(bd)가 좌측 이미지보다 짧아서 그 아래에 "한눈에 보는 핵심"이 별도 섹션으로 다시 나오면
+# 여백만 있다가 또 내용이 이어지는 것처럼 보인다는 피드백 → 핵심 요약(스탯 카드·비교박스)을 아예
+# bd 안으로 옮겨서, 이미지 오른쪽 공간 하나에만 전체 내용이 들어가도록 통합함. 겹치던 points 목록은 삭제.
+badges_html=''.join(f'<span class="contrib">{s}</span>' for s in [pj['roles'],*pj['stats']])
+steps_html=''.join(f'<li>{x}</li>' for x in pj['steps'])
 prob_html=''.join(f'<li>{x}</li>' for x in pj['problem'])
 sol_html=''.join(f'<li>{x}</li>' for x in pj['solution'])
 proj_html=f'''<div class="case reveal">
   <div class="magrow"><div class="im" data-full="assets/{pj['img']}.jpg"><img src="assets/{pj['img']}.jpg" loading="lazy" alt="{pj['title']}"></div>
-  <div class="bd"><h3>{pj['title']}</h3><p class="lead-p">{pj['lead']}</p>{points_ul(pj['points'])}<div class="rolebar"><span class="role">{pj['role']}</span><span class="contrib">{pj['contrib']}</span></div></div></div>
-  <div class="case-sum">
-    <div class="sum-title">한눈에 보는 핵심</div>
-    <div class="stats3">{stat_html}</div>
+  <div class="bd"><h3>{pj['title']}</h3><p class="lead-p">{pj['lead']}</p>
+    <ul class="steps">{steps_html}</ul>
+    <div class="projfacts">{badges_html}</div>
     <div class="compare">
       <div class="cbox before"><span class="clab">기존 방식</span><ul>{prob_html}</ul></div>
       <div class="cbox after"><span class="clab">시스템 도입 후</span><ul>{sol_html}</ul></div>
     </div>
-  </div>
+  </div></div>
 </div>'''
 cv_html=''.join(f'''<div class="row"><div class="yr">{y}</div><div><div class="co">{c}</div><div class="ro">{r}</div><div class="du">{d}</div></div></div>''' for (y,c,r,d) in career[::-1])
 
@@ -177,119 +304,285 @@ html=f'''<!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>김근하 — 웹 디자이너 포트폴리오</title>
 <meta name="description" content="웹 디자이너 김근하 포트폴리오 — 상세페이지·패키지·편집디자인·촬영·상품기획">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v={CSS_VER}">
 </head><body>
 
 <nav class="nav" id="nav">
   <a href="#top" class="brand"><span class="ko">김근하</span><span class="en">KIM GEUNHA · WEB DESIGNER</span></a>
-  <div class="nav-links"><a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a></div>
+  <div class="nav-links"><a href="#s01">Work</a><a href="#about">About</a><a href="#contact">Contact</a></div>
 </nav>
 
 <header class="hero" id="top"><div class="wrap">
-  <div class="eyebrow reveal">Portfolio · 2026</div>
-  <h1 class="reveal">긍정의 마인드,<br><span class="mark">무한한 가능성</span></h1>
-  <p class="hero-sub reveal">보기만 좋은 디자인이 아닌, 마음을 움직이는 디자인을 고민합니다.</p>
-  <div class="hero-meta reveal"><span>웹 디자이너 김근하</span><span class="dot"></span><span>기획 · 디자인 · 촬영</span><span class="dot"></span><span>상품기획 · 자사몰 운영</span></div>
-</div></header>
-
-<div class="wrap"><div class="hr"></div></div>
-
-<section class="sec tight" id="intro"><div class="wrap">
-  <div class="about-grid">
-    <div class="intro reveal">
-      <p>안녕하세요. 기획부터 디자인까지, 모든 과정을 책임지는 웹 디자이너 <b>김근하</b>입니다.</p>
-      <p>컴퓨터디자인을 전공하고 스튜디오 촬영, 웹·편집 디자인, 상품 기획, 자사몰 운영까지 폭넓은 현장을 직접 거쳤습니다. 한 자리에 머물기보다 “안 될 게 뭐 있어?”라는 마음으로, 늘 새로운 영역에 호기심을 갖고 부딪혀 온 덕분입니다.</p>
-      <p>그래서 저에게 좋은 디자인은 기술이 아니라 <b>호기심</b>에서 시작됩니다. ‘예쁘기만 한 디자인’을 넘어 그 이상을 고민하고, 빠르게 변하는 흐름에 발맞춰 요즘은 AI까지 익히며 디자인의 가능성을 넓혀가고 있습니다.</p>
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <div class="eyebrow reveal">Portfolio · 2026</div>
+      <h1 class="reveal">긍정의 마인드,<br><span class="mark">무한한 가능성</span></h1>
+      <p class="hero-sub reveal">본질을 먼저 이해하고, 마음을 움직이는 디자인을 고민합니다.</p>
+      <div class="hero-meta reveal"><span>기획 · 디자인 · 촬영</span><span class="dot"></span><span>신제품 개발 · 자사몰 운영</span></div>
     </div>
     <div class="profile reveal">
       <h3>Profile</h3>
       <div class="kv"><span class="k">이름</span><span class="v">김근하</span></div>
       <div class="kv"><span class="k">연락처</span><span class="v"><a href="tel:01023861832">010-2386-1832</a></span></div>
-      <div class="kv"><span class="k">이메일</span><span class="v"><a href="mailto:goldps365@naver.com">goldps365@naver.com</a></span></div>
+      <div class="kv"><span class="k">이메일</span><span class="v"><a href="mailto:ziziba81@naver.com">ziziba81@naver.com</a></span></div>
       <div class="kv"><span class="k">학력</span><span class="v">전북과학대학 컴퓨터디자인과 졸업</span></div>
       <div class="kv"><span class="k">자격증</span><span class="v">컴퓨터그래픽스 산업기사 · 컬러리스트 산업기사</span></div>
-      <div class="kv"><span class="k">Tools</span><span class="v"><div class="tags"><span>Photoshop</span><span>Illustrator</span><span>Figma</span></div></span></div>
+      <div class="kv"><span class="k">Tools</span><span class="v"><div class="tags"><span>Photoshop</span><span>Illustrator</span><span>Figma</span><span>AI (이미지·영상)</span><span>AI 콘텐츠 제작</span></div></span></div>
     </div>
   </div>
-</div></section>
+</div></header>
 
 <div class="wrap"><div class="hr"></div></div>
 
-<section class="sec tight" id="career"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Career</div><h2>경력</h2><p>가장 최근 경력부터 정리했습니다.</p></div>
-  <div class="cv reveal">{cv_html}</div>
-  <div class="cvmeta reveal">
-    <span>전북과학대학 컴퓨터디자인과 졸업</span>
-    <span>컴퓨터그래픽스 산업기사</span>
-    <span>컬러리스트 산업기사</span>
-    <span><b>Tools</b> · Photoshop · Illustrator · Figma</span>
+<section class="sec tight" id="interview"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">Q&A</div><h2>인터뷰</h2><p>이력서에는 다 담지 못한 이야기를, 대화하듯 편하게 풀어봤습니다.</p></div>
+  <div class="chatbox reveal" id="chatbox" data-qa='{chat_qa_json}'>
+    <div class="chatview" id="chatview"></div>
   </div>
 </div></section>
 
 <div class="wrap"><div class="hr"></div></div>
 
-<section class="sec tight" id="work"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Index</div><h2>작업 둘러보기</h2><p>보고 싶은 작업을 누르면 해당 영역으로 이동합니다.</p></div>
-  <div class="minimap reveal">{mm_html}</div>
+<section class="sec tight" id="products"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">Launched Products</div><h2>기획·출시 제품</h2><p>청송기획 재직 중 직접 기획에 참여한 제품 중, 매출 상위권 제품들을 대표로 소개합니다.</p></div>
+  <div class="prodgrid">{products_html}</div>
+</div></section>
+
+<section class="sec" id="s06" style="background:var(--paper-2)"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">Flagship Project</div><h2>셀프 디자인 프로젝트</h2></div>
+  {proj_html}
+</div></section>
+
+<section class="sec tight" id="ai"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">AI Works</div><h2>AI 활용 작업물</h2>
+    <div class="aitools"><span>Claude Code</span><span>Nano Banana</span><span>ChatGPT</span><span>Flow</span><span>CapCut</span></div>
+    <p>실제 판매 중인 제품 5종을 소재로, 브랜드와는 무관하게 개인적으로 진행한 AI 이미지·영상 샘플 작업입니다.<span class="vhint">대표 이미지를 클릭하면 화면 가득 영상이 나오고, 재생 버튼을 누르면 소리와 함께 재생됩니다</span></p>
+  </div>
+  <div class="airows">{ai_html}</div>
 </div></section>
 
 <div class="wrap"><div class="hr"></div></div>
 
 <section class="sec" id="s01"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">01 — Product Detail</div><h2>상세페이지 디자인</h2><p>{detail_desc}</p><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Product Detail</div><h2>상세페이지 디자인</h2><p>{detail_desc}</p><span class="contrib">Photoshop</span><span class="contrib">제품촬영</span><span class="contrib">기여도 100%</span></div>
   <div class="dshots reveal">{detail_html}</div>
 </div></section>
 
 <section class="sec" id="s02" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">02 — Package</div><h2>패키지 디자인</h2><p>브랜드의 특징을 효과적으로 전달하기 위해 패키지 디자인을 기획하고, <b>소비자의 시선을 끌 수 있는 컬러와 레이아웃</b>을 적용해 제품 정보를 직관적으로 전달하는 것을 목표로 제작하였습니다.<span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></p><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Package</div><h2>패키지 디자인</h2><p>브랜드의 특징을 효과적으로 전달하기 위해 패키지 디자인을 기획하고, <b>소비자의 시선을 끌 수 있는 컬러와 레이아웃</b>을 적용해 제품 정보를 직관적으로 전달하는 것을 목표로 제작하였습니다.<span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></p><span class="contrib">Photoshop</span><span class="contrib">Illustrator</span><span class="contrib">기여도 100%</span></div>
   {viewer(package)}
 </div></section>
 
 <section class="sec" id="s03"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">03 — Editorial</div><h2>편집디자인</h2><p>잡지광고·포스터부터 브로셔·리플릿·메뉴판까지 — 제품과 브랜드 성격에 맞춘 <b>다양한 컨셉의 편집물</b>을 기획·디자인했습니다.<span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></p><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Editorial</div><h2>편집디자인</h2><p>잡지광고·포스터부터 브로셔·리플릿·메뉴판까지 — 제품과 브랜드 성격에 맞춘 <b>다양한 컨셉의 편집물</b>을 기획·디자인했습니다.<span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></p><span class="contrib">Photoshop</span><span class="contrib">Illustrator</span><span class="contrib">기여도 100%</span></div>
   {viewer(editorial)}
 </div></section>
 
 <section class="sec" id="s04" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">04 — Photography</div><h2>사진 촬영</h2><p>DSLR을 이용한 제품·인물 직접 촬영. 조명과 연출을 설계해 디자인에 바로 쓰이는 결과물을 만듭니다.<span class="vhint">이미지를 누르면 크게 볼 수 있습니다</span></p><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Photography</div><h2>사진 촬영</h2><p>DSLR을 이용한 제품·인물 직접 촬영. 조명과 연출을 설계해 디자인에 바로 쓰이는 결과물을 만듭니다.<span class="vhint">이미지를 누르면 크게 볼 수 있습니다</span></p><span class="contrib">캐논 5D Mark 4</span><span class="contrib">기여도 100%</span></div>
   <div class="reveal">{tiles(photo)}</div>
 </div></section>
 
-<section class="sec" id="s05"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">05 — Planning</div><h2>상품기획</h2><p>신제품 기획부터 이벤트 상품까지</p></div>
-  <div class="mag">{plan_html}</div>
+<section class="sec tight" id="career"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">Career</div><h2>경력</h2>
+    <div class="cvmeta reveal">
+      <span>컴퓨터그래픽스 산업기사</span>
+      <span>컬러리스트 산업기사</span>
+      <span>Photoshop</span>
+      <span>Illustrator</span>
+      <span>Figma</span>
+      <span>AI (이미지·영상)</span>
+      <span>AI 콘텐츠 제작</span>
+    </div>
+  </div>
+  <div class="cv reveal">{cv_html}</div>
 </div></section>
 
-<section class="sec" id="s06" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">06 — Flagship Project</div><h2>자사몰 고도화 프로젝트</h2></div>
-  {proj_html}
-</div></section>
+<div class="wrap"><div class="hr"></div></div>
 
 <section class="sec about" id="about"><div class="wrap">
   <div class="about-head reveal">
-    <div class="lead">저의 경험이 누군가의 어제가 아니라,<br><span class="hl">함께 만드는 내일이 되길 바랍니다.</span></div>
-    <p class="about-intro">좋은 디자인은 기술이 아니라 ‘호기심’에서 나옵니다.</p>
+    <div class="lead"><span class="hl">Why not?</span></div>
   </div>
   <div class="story-one reveal">
-    <p>저의 평소 모토는 <b>‘Why not?’</b>입니다. 안 된다고 포기하기 전에 “왜 안돼?”라는 마음으로, 많은 영역에 가능성과 호기심을 가지고 새로운 걸 배우는 데서 즐거움을 찾는 편입니다.</p>
-    <p>그러다 보니 이전 회사에서도 한 가지 포지션에 머물지 않게 되었고, 총괄 역할까지 맡게 되었습니다. 이런 저를 보고 주변에서는 종종 “어떻게 이런 것까지 생각했냐”, “어떻게 이런 일까지 하게 됐냐”고 묻곤 했는데, 저의 생활신조가 기본적으로 바탕에 깔려 있기 때문이 아닐까 싶습니다.</p>
-    <p>배움에는 끝이 없다고 하죠. 특히 시시각각 발전하는 요즘 같은 AI 시대에는 더 적극적인 자세가 필요하다고 생각합니다. 그래서 지금도 뒤처지지 않으려 AI를 익히고 있고, 이 사이트와 목업 영상도 AI를 활용해 만들어 보게 되었습니다. 아직은 물론 서툰 부분도 있지만, 활용법을 하나씩 알아갈수록 세상의 빠른 변화가 두려움보다는 기대와 설렘, 더 큰 호기심으로 다가옵니다.</p>
-    <p>어떠신가요? 저와 함께하는 모습, 벌써 설레지 않으세요? 지금까지 쌓아온 저의 풍부한 경험이 과거에 머물기보다는, 함께 만드는 새로운 내일이 되기를 바랍니다.</p>
+    <p>해보지 않은 일 앞에서 ‘할 수 있을까?’보다<br><b>‘왜 안돼, 한번 해보자.’</b>라는 마음으로 시작합니다.</p>
+    <p>웹디자인을 시작으로 기획, 신제품 개발, 브랜드 운영, 디자인팀 총괄까지.<br>한 가지 역할에 머무르지 않고 필요하다면 새로운 영역을 배우고 제 것으로 만들어왔습니다.</p>
+    <p>그 과정에서 각각의 경험을 연결해 디자인을 넘어 제품과 브랜드 전체를 더 넓게 바라보는 시야를 갖게 되었습니다.</p>
+    <p>이제 그동안 쌓아온 저의 경험이<br>새로운 곳에서 가치 있게 쓰이길 바랍니다.</p>
   </div>
 </div></section>
 
 <footer class="foot" id="contact"><div class="wrap">
   <div class="big">기획부터 디자인까지,<br>끝까지 책임지겠습니다.</div>
-  <div class="info">웹 디자이너 김근하<br><a href="tel:01023861832">010-2386-1832</a><br><a href="mailto:goldps365@naver.com">goldps365@naver.com</a></div>
+  <div class="info">웹 디자이너 김근하<br><a href="tel:01023861832">010-2386-1832</a><br><a href="mailto:ziziba81@naver.com">ziziba81@naver.com</a></div>
 </div><div class="wrap"><div class="copy">© 2026 KIM GEUNHA — PORTFOLIO. ALL RIGHTS RESERVED.</div></div></footer>
 
-<div class="lb" id="lb"><div class="x">×</div><div class="navbtn prev" id="lbPrev">‹</div><div class="navbtn next" id="lbNext">›</div><img src="" alt=""><video class="lb-vid" muted loop playsinline controls hidden></video><span class="lbcap">AI를 이용하여 제작된 3D 목업 영상입니다</span></div>
+<div class="lb" id="lb"><div class="x">×</div><div class="navbtn prev" id="lbPrev">‹</div><div class="navbtn next" id="lbNext">›</div><img src="" alt=""><video class="lb-vid" playsinline controls hidden></video><div class="lbplay" id="lbPlay" hidden>▶</div><span class="lbcap"></span></div>
 
 <script>
 const nav=document.getElementById('nav');
 addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>40));
-const io=new IntersectionObserver(es=>es.forEach(e=>{{if(e.isIntersecting){{e.target.classList.add('in');io.unobserve(e.target)}}}}),{{threshold:.1}});
+// 글자를 실제로 추가하지 않고, 미리 전체 글자를 (안 보이게) 다 배치해두기만 한다(prepare).
+// → 줄바꿈 위치가 처음부터 고정돼 있어서 타이핑 중간에 단어가 다음 줄로 튀는 현상이 없고,
+//   Q·A 두 문단을 쌍으로 만들 때 "둘 다" 미리 배치해두면 나중에 A 타이핑이 시작되는 순간
+//   레이아웃 높이가 갑자기 늘어나며 스크롤이 튀는 현상도 함께 방지된다.
+function prepareType(el){{
+  const text=el.dataset.text||'';
+  el.innerHTML='';
+  // 텍스트 속 줄바꿈(\\n)은 타이핑 애니메이션 없이 <br>로 즉시 배치(한 말풍선 안에서 문장을 줄만 나눠 보여줄 때 사용)
+  const spans=[...text].map(ch=>{{
+    if(ch==='\\n'){{el.appendChild(document.createElement('br'));return null;}}
+    const s=document.createElement('span');s.className='ch';s.textContent=ch;el.appendChild(s);return s;
+  }}).filter(Boolean);
+  const cur=document.createElement('span');cur.className='cur';
+  el.insertBefore(cur,spans[0]||null);
+  let i=0,done=false,paused=false,timer=null,curSpeed=0,onDoneCb=null,onTickCb=null;
+  function scheduleNext(delay){{timer=setTimeout(tick,delay);}}
+  // setTimeout 체인 + 약간의 랜덤 편차를 줘서 기계적으로 균일하지 않고 사람이 타이핑하듯 자연스럽게
+  function tick(){{
+    if(spans[i])spans[i].classList.add('on');
+    i++;el.insertBefore(cur,spans[i]||null);if(onTickCb)onTickCb();
+    if(i>=spans.length){{finish();return;}}
+    if(paused)return; // pause() 호출로 멈춘 상태면 다음 글자를 예약하지 않고 여기서 대기(위치 i는 유지)
+    const jitter=curSpeed*0.35;
+    scheduleNext(curSpeed+(Math.random()*jitter*2-jitter));
+  }}
+  // play(): 실제로 한 글자씩 보이게 전환을 시작한다(호출 전까지는 전부 투명 상태로 자리만 차지)
+  function play(speed,onDone,onTick){{curSpeed=speed;onDoneCb=onDone;onTickCb=onTick;scheduleNext(speed);}}
+  function finish(){{if(done)return;done=true;clearTimeout(timer);if(cur.parentNode)cur.remove();if(onDoneCb)onDoneCb();}}
+  // pause(): 멈췄던 글자 위치(i)는 그대로 두고 다음 글자 타이머만 취소. resume(): 그 자리에서 이어서 진행.
+  function pause(){{if(done||paused)return;paused=true;clearTimeout(timer);}}
+  function resume(){{if(done||!paused)return;paused=false;scheduleNext(curSpeed);}}
+  return {{play,pause,resume}};
+}}
+const io=new IntersectionObserver(es=>es.forEach(e=>{{if(e.isIntersecting){{
+  e.target.classList.add('in');io.unobserve(e.target);
+}}}}),{{threshold:.1}});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+// 인터뷰: 고정 크기 박스 안에서 한 쌍씩 타이핑하며 계속 자동으로 다음 대화로 넘어감. 클릭하면 그 자리에서
+// 타이핑이 멈추고(위치는 유지) 휠로 지나간 대화를 자유롭게 볼 수 있음 — 다시 클릭/마우스가 영역을 벗어남/
+// 5초간 마우스 정지 중 하나라도 일어나면 멈췄던 자리에서 이어서 타이핑 재생.
+const chatbox=document.getElementById('chatbox');
+if(chatbox){{
+  const pairs=JSON.parse(chatbox.dataset.qa);
+  const view=document.getElementById('chatview');
+  let idx=-1,timer=null,started=false,browsing=false;
+  // 일시정지 상태 관리 — sched()는 setTimeout의 대체제로, 일시정지 중이면 예약된 함수를 큐에만 담아뒀다가
+  // resumeTyping()에서 이어서 실행한다(다음 대화/다음 말풍선으로 넘어가는 대기시간도 함께 멈추기 위함).
+  let paused=false,activeTyper=null,activeEl=null,queuedFn=null,pendingFn=null,idleT=null;
+  function sched(fn,delay){{
+    clearTimeout(timer);
+    pendingFn=fn; // 지금 예약해두는 함수를 기억해뒀다가, 일시정지가 그 대기시간 중에 걸리면 잃어버리지 않게 함
+    if(paused){{queuedFn=fn;pendingFn=null;return;}}
+    timer=setTimeout(()=>{{pendingFn=null;fn();}},delay);
+  }}
+  function resetIdle(){{clearTimeout(idleT);idleT=setTimeout(resumeTyping,5000);}}
+  function pauseTyping(){{
+    if(paused)return;
+    paused=true;browsing=true;
+    clearTimeout(timer);
+    // 대화/말풍선 전환 사이의 "쉬는 시간" 도중에 멈춘 경우, 그때 예약돼 있던 다음 진행을 잃어버리지 않도록
+    // queuedFn으로 옮겨서 재개 시 이어서 실행되게 한다(안 그러면 타이핑 도중이 아닌 순간에 멈췄을 때 영원히 멈춰버림).
+    if(pendingFn){{queuedFn=pendingFn;pendingFn=null;}}
+    if(activeTyper)activeTyper.pause();
+    resetIdle();
+  }}
+  function resumeTyping(){{
+    if(!paused)return;
+    paused=false;browsing=false;clearTimeout(idleT);
+    if(activeTyper){{activeTyper.resume();if(activeEl)followCursor(activeEl);}}
+    if(queuedFn){{const f=queuedFn;queuedFn=null;timer=setTimeout(f,150);}}
+  }}
+  // 새 대화가 시작될 땐 항상 바닥으로 스크롤. 타이핑 중엔(한 글자씩) 이미 바닥 근처에 있을 때만 계속 따라가고,
+  // 사용자가 위로 스크롤해서 읽고 있으면 그 위치를 건드리지 않음(타이핑 자체는 배경에서 계속 진행)
+  // 대화 로그가 길어질수록 한 번에 스크롤해야 할 거리가 커지는데, 'smooth'로 멀리 스크롤을 시키면
+  // 애니메이션이 끝까지 진행되지 못하고 중간에 멈춰버려(특히 답변이 긴 마지막 문항에서) 답변이
+  // 화면 밖에 가려진 채로 타이핑되는 버그가 있었음 → 즉시 이동으로 바꿔 항상 확실하게 바닥까지 붙게 한다
+  // ★ 스크롤은 "내용의 맨 아래"가 아니라 "지금 타이핑 중인 커서"를 따라간다.
+  //   글자는 줄바꿈이 튀지 않도록 안 보이는 상태로 미리 다 배치해두는데, 그 상태에서 맨 아래로 스크롤하면
+  //   아직 아무것도 안 찍힌 빈 공간이 화면을 가득 채우고(질문이 위로 밀려 안 보이고) 답변도 화면 밖에서
+  //   타이핑되다 중간부터 갑자기 나타나는 문제가 있었음 → 커서가 항상 화면 안에 있도록 최소한만 스크롤.
+  const PAD=44; // 위·아래 페이드 영역에 글자가 가리지 않도록 확보하는 여백
+  function followCursor(el){{
+    if(browsing)return;
+    const cur=el&&el.querySelector('.cur');
+    if(!cur)return;
+    const cr=cur.getBoundingClientRect(),vr=view.getBoundingClientRect();
+    const below=cr.bottom-(vr.bottom-PAD);
+    if(below>0){{view.scrollTop+=below;return;}}
+    const above=(vr.top+PAD)-cr.top;
+    if(above>0)view.scrollTop-=above;
+  }}
+  function appendPair(i){{
+    const [q,a]=pairs[i];
+    const pair=document.createElement('div');
+    pair.className='chatpair';
+    // q 또는 a가 없으면(null) 그쪽 말풍선은 아예 만들지 않고 반대쪽만 혼자 나온다(첫 자기소개용)
+    const turns=[];
+    if(q){{const qP=document.createElement('p');qP.className='type';qP.dataset.text=q;
+      const qB=document.createElement('div');qB.className='bubble q';qB.appendChild(qP);
+      pair.appendChild(qB);turns.push({{p:qP,speed:100,b:qB}});}}
+    if(a){{const aP=document.createElement('p');aP.className='type';aP.dataset.text=a;
+      const aB=document.createElement('div');aB.className='bubble a';aB.appendChild(aP);
+      pair.appendChild(aB);turns.push({{p:aP,speed:100,b:aB}});}}
+    // 자기 차례가 되기 전까지는 말풍선 배경 자체를 숨겨둔다(레이아웃 공간은 이미 확보돼 있지만, 빈 말풍선이 미리 보이지 않도록)
+    turns.slice(1).forEach(t=>t.b.classList.add('pending'));
+    view.appendChild(pair);
+    // 이 쌍에 포함된 말풍선들의 전체 레이아웃을 지금 미리 다 잡아둔다(투명 상태) — 나중 차례가 와도 높이가 갑자기 안 늘어남
+    turns.forEach(t=>t.t=prepareType(t.p));
+    // turns를 순서대로 하나씩 타이핑(마우스와 무관하게 항상 같은 속도) — 마지막 것까지 끝나면 다음 쌍으로
+    function playTurn(k){{
+      const t=turns[k];
+      activeTyper=t.t;activeEl=t.p; // 일시정지 시 이 타이핑을 멈추고, 재개 시 이 위치로 스크롤을 되돌리기 위해 기억해둠
+      t.b.classList.remove('pending');
+      followCursor(t.p); // 새 말풍선이 시작될 때 그 첫 줄이 보이도록 필요한 만큼만 스크롤
+      t.t.play(t.speed,()=>{{
+        followCursor(t.p);
+        // 다음 말풍선으로 넘어가기 전 쉬는 동안 미리 위치를 잡아둬서, 타이핑 시작과 스크롤이 겹치지 않게 한다
+        if(k+1<turns.length){{followCursor(turns[k+1].p);sched(()=>playTurn(k+1),350);}}
+        // 마지막 마무리 인사까지 끝나면 3초 쉬었다가 처음 인사부터 다시 재생
+        else{{sched(next,i===pairs.length-1?3000:500);}}
+      }},()=>followCursor(t.p));
+    }}
+    playTurn(0);
+  }}
+  function next(){{
+    // 마지막 대화(마무리 인사)까지 다 본 뒤 처음으로 돌아가는 경우에만: 3초 대기(playTurn 쪽에서 이미 처리)
+    // 후 전체 내용을 서서히 페이드아웃(0.6초) → 완전히 사라진 채로 4초 더 대기 → 비우고 첫 인사부터 다시 시작.
+    // 그 외(평소 다음 대화로 넘어갈 때)엔 페이드 없이 바로 이어짐.
+    const wrapping=idx===pairs.length-1;
+    idx=(idx+1)%pairs.length;
+    clearTimeout(timer);
+    if(wrapping){{
+      view.classList.add('fadeout');
+      setTimeout(()=>{{
+        view.innerHTML='';
+        view.scrollTop=0;
+        view.classList.remove('fadeout');
+        appendPair(idx);
+      }},600+4000);
+    }}else{{
+      appendPair(idx);
+    }}
+  }}
+  // 클릭하면 타이핑을 그 자리에서 멈추고(browsing=true라 자동 스크롤도 함께 멈춤) 휠로 자유롭게 훑어볼 수 있게 함.
+  // 다시 클릭하거나, 마우스가 인터뷰 영역을 벗어나거나, 5초간 마우스를 움직이지 않으면(정지 상태) 자동으로 재개.
+  view.addEventListener('click',()=>{{paused?resumeTyping():pauseTyping();}});
+  view.addEventListener('mouseleave',()=>{{if(paused)resumeTyping();}});
+  view.addEventListener('mousemove',()=>{{if(paused)resetIdle();}});
+  // 휠로 위로 스크롤해도(클릭하지 않은 상태여도) 지나간 대화를 읽는 중으로 보고 자동 따라가기만 멈춘다.
+  // 다시 지금 타이핑 중인 위치까지 내려오면 자동 따라가기가 스스로 복구된다(일시정지 중이 아닐 때만).
+  view.addEventListener('wheel',e=>{{if(e.deltaY<0)browsing=true;}},{{passive:true}});
+  view.addEventListener('scroll',()=>{{
+    if(!browsing||paused)return;
+    const cur=view.querySelector('.cur');
+    if(!cur)return;
+    const cr=cur.getBoundingClientRect(),vr=view.getBoundingClientRect();
+    if(cr.top>=vr.top&&cr.bottom<=vr.bottom)browsing=false;
+  }},{{passive:true}});
+  new IntersectionObserver(es=>es.forEach(e=>{{if(e.isIntersecting&&!started){{started=true;next();}}}}),{{threshold:.4}}).observe(chatbox);
+}}
 document.querySelectorAll('.viewer').forEach(v=>{{
   const main=v.querySelector('.vmain'),mimg=main.querySelector('.vm-img'),mvid=main.querySelector('.vm-vid');
   v.querySelectorAll('.vt').forEach(t=>t.addEventListener('click',()=>{{
@@ -304,11 +597,15 @@ document.querySelectorAll('.viewer').forEach(v=>{{
     v.querySelectorAll('.vt').forEach(x=>x.classList.remove('active'));t.classList.add('active');
   }}));
 }});
-const lb=document.getElementById('lb'),lbimg=lb.querySelector('img'),lbvid=lb.querySelector('.lb-vid');
+const lb=document.getElementById('lb'),lbimg=lb.querySelector('img'),lbvid=lb.querySelector('.lb-vid'),lbcap=lb.querySelector('.lbcap'),lbPlay=document.getElementById('lbPlay');
 let gallery=[],gi=0;
 function show(i){{gi=(i+gallery.length)%gallery.length;const it=gallery[gi];lb.classList.toggle('vidcap',it.kind==='video');
-  if(it.kind==='video'){{lbimg.hidden=true;lbimg.removeAttribute('src');lbvid.src=it.src;lbvid.poster=it.poster||'';lbvid.hidden=false;lbvid.play().catch(()=>{{}});lb.classList.remove('cut');}}
-  else{{lbvid.pause();lbvid.hidden=true;lbvid.removeAttribute('src');lbimg.src=it.src;lbimg.hidden=false;lb.classList.toggle('cut',!!it.cut);}}}}
+  if(it.kind==='video'){{lbimg.hidden=true;lbimg.removeAttribute('src');lbvid.src=it.src;lbvid.poster=it.poster||'';
+    lbvid.muted=it.muted!==false;lbvid.loop=it.loop!==false;lbvid.hidden=false;
+    if(it.autoplay===false){{lbvid.pause();lbPlay.hidden=false;}}else{{lbvid.play().catch(()=>{{}});lbPlay.hidden=true;}}
+    lbcap.textContent=it.cap||'AI를 이용하여 제작된 3D 목업 영상입니다';lb.classList.remove('cut');}}
+  else{{lbvid.pause();lbvid.hidden=true;lbvid.removeAttribute('src');lbimg.src=it.src;lbimg.hidden=false;lb.classList.toggle('cut',!!it.cut);lbPlay.hidden=true;}}}}
+lbPlay.addEventListener('click',e=>{{e.stopPropagation();lbvid.play().catch(()=>{{}});lbPlay.hidden=true;}});
 function openLb(list,idx){{gallery=list;lb.classList.toggle('nav',list.length>1);show(idx);lb.classList.add('on');document.body.style.overflow='hidden';}}
 const handled=new Set();
 // 패키지·편집 뷰어: 썸네일 전체를 갤러리로, 현재 활성 이미지에서 시작
@@ -326,9 +623,56 @@ dEls.forEach((el,i)=>{{handled.add(el);el.addEventListener('click',()=>openLb(dL
 const pEls=[...document.querySelectorAll('.tiles [data-full]')];
 const pList=pEls.map(el=>({{src:el.dataset.full,cut:el.dataset.cut==='1'}}));
 pEls.forEach((el,i)=>{{handled.add(el);el.addEventListener('click',()=>openLb(pList,i));}});
+// AI 활용 작업물: 대표 이미지를 클릭했을 때만 화면 가득 확대 (설명 텍스트는 클릭 대상 아님)
+// 상품(행)의 영상+콘셉트 이미지를 하나의 갤러리로 묶어서, 영상 재생 후 좌우로 넘기면 그 상품의 콘셉트 이미지로 넘어가도록 함
+// (다른 상품으로는 넘어가지 않음 — 갤러리가 상품 단위로 분리돼 있음)
+document.querySelectorAll('.airow').forEach(row=>{{
+  const els=[...row.querySelectorAll('.aimedia')];
+  const list=els.map(el=>({{src:el.dataset.src,kind:el.dataset.kind,poster:el.dataset.poster||'',
+    cap:el.dataset.kind==='video'?'AI로 기획부터 제작까지 진행한 브랜드 영상입니다':'',
+    muted:false,loop:false,autoplay:el.dataset.kind==='video'?false:undefined}}));
+  els.forEach((el,i)=>el.addEventListener('click',()=>openLb(list,i)));
+}});
+// 콘셉트 이미지가 3장+ 그리드일 때, 스크롤이나 잘림 없이 "영상 커버 하단 끝을 넘지 않는 선"에서
+// 타일이 최대한 커지도록 열 개수·타일 크기를 계산해서 배치함(좌우 여백은 생겨도 무방, 세로만 제한).
+// 그리드 위에 제목·리드문·작업방식·배지가 먼저 오는 만큼, "영상 하단 좌표 − 그리드 시작 좌표"로
+// 실제 남은 세로 공간을 구하고, 그 안에 n장이 다 들어가는 열 개수 중 타일이 가장 커지는 조합을 선택.
+// 데스크톱 2단 레이아웃에서만 적용하고, 모바일 1단 스택에서는 기본 3열 그리드로 되돌림.
+(function(){{
+  const rows=[...document.querySelectorAll('.airow')].map(row=>({{row,cover:row.querySelector('.aimedia'),grid:row.querySelector('.aiconcepts.many')}})).filter(x=>x.cover&&x.grid);
+  if(!rows.length)return;
+  const GAP=10;
+  function bestLayout(n,w,h){{
+    let best=null;
+    for(let c=1;c<=n;c++){{
+      const r=Math.ceil(n/c);
+      const tw=(w-(c-1)*GAP)/c;
+      if(tw<=0)continue;
+      const neededH=r*tw+(r-1)*GAP;
+      if(neededH<=h+28&&(!best||tw>best.tw))best={{c,tw}};
+    }}
+    if(!best){{const tw=Math.max(20,h);best={{c:Math.max(1,Math.floor((w+GAP)/(tw+GAP))),tw}};}}
+    return best;
+  }}
+  function sync(){{
+    const twoCol=matchMedia('(min-width:901px)').matches;
+    rows.forEach(({{cover,grid}})=>{{
+      if(!twoCol){{grid.style.gridTemplateColumns='';return;}}
+      if(cover.offsetHeight===0)return;
+      const n=grid.children.length,w=grid.clientWidth;
+      const h=cover.getBoundingClientRect().bottom-grid.getBoundingClientRect().top;
+      if(w<=0||h<=0)return;
+      const {{c,tw}}=bestLayout(n,w,h);
+      grid.style.gridTemplateColumns=`repeat(${{c}}, ${{tw}}px)`;
+    }});
+  }}
+  new ResizeObserver(sync).observe(document.body);
+  rows.forEach(({{row,cover}})=>{{new ResizeObserver(sync).observe(cover);new ResizeObserver(sync).observe(row.querySelector('.aibd'));}});
+  sync();
+}})();
 // 그 외 단일 이미지(상품기획 등)
 document.querySelectorAll('[data-full]').forEach(el=>{{if(handled.has(el))return;el.addEventListener('click',()=>openLb([{{src:el.dataset.full,cut:el.dataset.cut==='1'}}],0));}});
-function close(){{lb.classList.remove('on');document.body.style.overflow='';lbimg.src='';lbvid.pause();lbvid.removeAttribute('src');}}
+function close(){{lb.classList.remove('on');document.body.style.overflow='';lbimg.src='';lbvid.pause();lbvid.removeAttribute('src');lbPlay.hidden=true;}}
 lb.addEventListener('click',close);
 document.getElementById('lbPrev').addEventListener('click',e=>{{e.stopPropagation();show(gi-1);}});
 document.getElementById('lbNext').addEventListener('click',e=>{{e.stopPropagation();show(gi+1);}});

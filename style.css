@@ -45,6 +45,8 @@ img{display:block;max-width:100%}
 .hero-sub{margin-top:30px;max-width:600px;font-size:clamp(15px,1.5vw,18px);color:var(--ink-soft);line-height:1.7}
 .hero-meta{margin-top:28px;display:flex;gap:16px;align-items:center;font-size:13px;color:var(--muted);font-weight:600;flex-wrap:wrap}
 .hero-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.hero-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:40px;align-items:center}
+.hero-grid .hero-copy h1{font-size:84px}
 
 /* section base (compact) */
 .sec{padding:74px 0}
@@ -55,29 +57,86 @@ img{display:block;max-width:100%}
 .sec-head p{margin-top:12px;color:var(--ink-soft);font-size:15px;max-width:none}
 .sec-head .vhint{display:block;margin-top:9px;font-size:14px;font-weight:700;color:var(--accent-deep)}
 
-/* intro + profile */
-.intro-lead{font-size:clamp(20px,2.6vw,28px);font-weight:800;letter-spacing:-.02em;line-height:1.4;margin-bottom:18px}
-.intro p{font-size:clamp(16px,1.9vw,20px);color:var(--ink);line-height:1.85;margin-bottom:20px}
-.intro p:last-child{margin-bottom:0}
-.intro b{font-weight:800}
-.profile{border:1px solid var(--line-strong);border-radius:16px;padding:24px 26px;background:var(--card)}
+/* profile — 이제 히어로 우측에 위치 */
+.profile{border:1px solid var(--line-strong);border-radius:16px;padding:16px 26px;background:var(--card)}
 .profile h3{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:14px}
 .profile .kv{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
 .profile .kv:first-of-type{border-top:none}
 .profile .k{color:var(--muted);font-weight:700}
 .profile .v{color:var(--ink-soft);font-weight:600}
 .profile .v a:hover{color:var(--accent)}
-.profile .tags{display:flex;flex-wrap:wrap;gap:6px}
-.profile .tags span{font-size:11.5px;font-weight:600;border:1px solid var(--line-strong);border-radius:100px;padding:3px 10px}
+.profile .tags{display:flex;flex-wrap:wrap;gap:8px}
+.profile .tags span{font-size:12.5px;font-weight:700;background:var(--paper-2);color:var(--accent-deep);border-radius:8px;padding:5px 12px}
 
-/* minimap buttons */
-.minimap{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.mm{display:flex;align-items:center;gap:16px;border:1px solid var(--line-strong);border-radius:12px;padding:18px 22px;transition:.25s;background:var(--paper)}
-.mm:hover{border-color:var(--accent);background:var(--card);transform:translateY(-2px)}
-.mm .n{font-size:15px;font-weight:800;color:var(--accent);letter-spacing:.02em}
-.mm .t{font-size:15px;font-weight:700;letter-spacing:-.01em}
-.mm .ar{margin-left:auto;color:var(--muted);font-weight:700;transition:.25s}
-.mm:hover .ar{color:var(--accent);transform:translateX(3px)}
+
+/* AI 활용 작업물 섹션 상단 — 실제 사용한 제작툴 태그 */
+.aitools{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)}
+.aitools span{background:var(--paper-2);color:var(--accent-deep);border-radius:8px;padding:5px 12px;font-weight:700}
+
+/* AI 활용 작업물 — 왼쪽 영상(세로 비율 그대로) · 오른쪽 설명 + 콘셉트 이미지(설명 아래) */
+.airows{display:flex;flex-direction:column;gap:46px}
+.airow{display:grid;grid-template-columns:340px 1fr;gap:40px;align-items:start}
+.aimedia{position:relative;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:#fff;cursor:zoom-in;transition:.25s}
+.aimedia:hover{transform:translateY(-2px)}
+.aimedia img{display:block;width:100%;height:auto}
+.aimedia .playbadge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(16,48,44,.58);color:#fff;font-size:19px;display:flex;align-items:center;justify-content:center;padding-left:3px}
+.aimedia .aitag{position:absolute;top:10px;left:10px;font-size:10.5px;font-weight:700;color:#fff;background:rgba(16,48,46,.62);border-radius:100px;padding:4px 10px;letter-spacing:.01em;z-index:1}
+/* 오른쪽 컬럼을 왼쪽 영상과 같은 높이로 세로 배치 → 콘셉트 영역(.featured)이 남는 세로 공간을 그대로 채움 */
+.aibd{display:flex;flex-direction:column;min-height:0}
+/* 콘셉트 이미지: 여러 장이면 옆으로 나란히 나열(지금은 1장, 나중에 추가되면 자동으로 줄바꿈되며 늘어남) */
+.aiconcepts{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin-top:16px}
+.aiconcepts .aimedia.sub{flex:0 0 auto;width:84px;aspect-ratio:1/1;box-shadow:none;border:1px solid var(--line)}
+.aiconcepts .aimedia.sub .aitag{font-size:9px;padding:3px 7px;top:6px;left:6px}
+.aiconcepts .aimedia.sub img{width:100%;height:100%;object-fit:cover}
+/* 이미지가 1~2장뿐일 때: 작은 타일 대신, 남는 세로 공간을 채우는 큼직한 정사각형으로 표시 */
+.aiconcepts.featured{flex:1 1 auto;min-height:0;align-items:stretch}
+.aiconcepts.featured .aimedia.sub{width:auto;height:100%;max-width:300px;aspect-ratio:1/1}
+.aiconcepts.featured .aimedia.sub img{width:100%;height:100%;object-fit:contain;background:var(--paper-2)}
+/* 콘셉트 이미지가 3장 이상일 때 — 84px 고정 타일 대신 3열 그리드로 크게 채워서
+   영상 커버 옆에서 자료가 빈약해 보이지 않게 함(타일 폭은 컨테이너에 맞춰 자동으로 커짐) */
+.aiconcepts.many{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.aiconcepts.many .aimedia.sub{width:auto;aspect-ratio:1/1}
+.aibd h3{font-size:clamp(18px,2.2vw,23px);font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.aitagword{font-size:12.5px;font-weight:700;color:var(--accent-deep);background:var(--paper-2);border-radius:8px;padding:5px 12px;letter-spacing:.01em}
+.aibd .lead-p{margin-bottom:14px}
+.aiflow{font-size:13.5px;color:var(--ink-soft);line-height:1.7;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.aiflow b{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:5px}
+.aikw{display:flex;flex-wrap:wrap;gap:8px}
+.aikw span{font-size:12.5px;font-weight:700;background:none;border:1px solid var(--accent);color:var(--accent-deep);border-radius:8px;padding:4px 11px}
+
+/* 라이트박스: 영상은 자동재생 없이 재생 버튼을 눌러야 재생 */
+.lb .lbplay{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:rgba(16,48,46,.68);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;padding-left:5px;cursor:pointer;z-index:5;transition:.2s}
+.lb .lbplay:hover{background:rgba(16,48,46,.85)}
+.lb .lbplay[hidden]{display:none}
+
+/* 인터뷰 채팅형 Q&A — 배경 없이 텍스트만, 실제 채팅창처럼 새 대화가 아래에 쌓이고 박스가 자동으로
+   아래로 스크롤되며 이전 대화는 위로 사라짐. 질문은 왼쪽 위·답변은 오른쪽 아래(카카오톡처럼 시간순).
+   가만히 두면 자동 재생, 클릭하면 다음 대화로, 휠 스크롤하면 자동재생만 멈추고 자유롭게 훑어볼 수 있음 */
+.chatbox{position:relative;height:360px;max-width:100%;border:1px solid var(--line);border-radius:20px;background:var(--card);cursor:pointer;user-select:none}
+.chatview{position:absolute;inset:0;overflow-y:auto;padding:24px 48px;display:flex;flex-direction:column;gap:22px;scroll-behavior:smooth;transition:opacity .6s ease;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 32px,#000 calc(100% - 32px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 32px,#000 calc(100% - 32px),transparent 100%)}
+.chatview.fadeout{opacity:0}
+/* 자동재생 중엔 스크롤바를 숨기고(나왔다 사라졌다 하는 깜빡임 방지), 사용자가 직접 스크롤/클릭한 뒤에만 보여줌 */
+/* 스크롤바는 항상 숨김 — 켰다 켰다 하면(수동 모드일 때만 보이게 했었음) 대화 높이가 바뀔 때마다
+   나타났다 사라지는 깜빡임이 생겨서, 휠 스크롤은 그대로 되게 두되 스크롤바 자체는 안 보이게 통일함 */
+.chatview{scrollbar-width:none}
+.chatview::-webkit-scrollbar{display:none}
+.chatpair{display:flex;flex-direction:column;gap:22px;flex:none}
+.bubble{max-width:50%}
+/* 아직 자기 차례가 안 된 말풍선은 레이아웃 공간만 미리 차지하고 화면엔 안 보이게(빈 말풍선이 미리 노출되지 않도록) */
+.bubble.pending{visibility:hidden}
+.bubble.q{align-self:flex-start}
+.bubble.q .type{font-size:16px;font-weight:400;color:var(--ink-soft);line-height:1.7;background:rgba(79,99,95,.05);border-radius:16px 16px 16px 4px;padding:10px 16px;display:inline-block}
+/* width(고정)를 쓰지 않고 max-width만 둬서, 말풍선이 텍스트 길이에 맞춰 오른쪽 끝에 딱 붙어 보이게(양옆 여백 없이) */
+.bubble.a{align-self:flex-end;max-width:50%}
+/* vw 기반 clamp를 쓰면 브라우저 창 너비가 바뀔 때마다 글자 크기가 실시간으로 다시 계산되며 흔들려 보여서(특히 PC에서 창 크기를 만질 때) 고정 크기로 변경 */
+.bubble.a .type{font-size:18px;font-weight:400;color:var(--accent-deep);line-height:1.6;letter-spacing:-.01em;background:rgba(27,183,172,.05);border-radius:16px 16px 4px 16px;padding:12px 18px;display:inline-block}
+/* 전체 글자를 미리 배치해두고 하나씩 보이게만 바꾸는 방식 — 줄바꿈이 처음부터 고정돼 있어 타이핑 중 단어가 다음 줄로 튀지 않음 */
+.type .ch{opacity:0}
+.type .ch.on{opacity:1}
+/* width:0 + box-shadow로 그리기 — 커서가 실제 레이아웃 폭을 차지하면(2px라도) 줄바꿈 경계에 걸쳐있는 순간
+   그 줄이 "꽉 차서" 다음 줄로 넘어가버렸다가, 커서가 지나가면 다시 한 줄로 합쳐지며 높이가 갑자기 바뀌는 버그가 있었음 */
+.type .cur{display:inline-block;width:0;height:1em;vertical-align:-2px;box-shadow:1px 0 0 0 currentColor;animation:blink .8s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
 
 /* galleries */
 .showcase{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
@@ -94,7 +153,10 @@ img{display:block;max-width:100%}
 .dcard .cap{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);color:var(--ink);font-size:12px;font-weight:700;padding:5px 11px;border-radius:100px;z-index:2}
 
 /* contribution badge */
-.contrib{display:inline-flex;align-items:center;margin-top:14px;font-size:12.5px;font-weight:700;color:var(--accent);background:var(--paper-2);border:1px solid var(--accent);border-radius:100px;padding:5px 14px;letter-spacing:.01em}
+.contrib{display:inline-flex;align-items:center;margin-top:14px;font-size:12.5px;font-weight:700;color:var(--accent-deep);background:var(--paper-2);border-radius:8px;padding:5px 12px;letter-spacing:.01em}
+.sec-head .contrib+.contrib{margin-left:8px}
+/* 민트 배경 섹션(패키지·사진촬영)에서는 배지 배경이 섹션 배경과 같아 안 보이므로 흰 배경+테두리로 구분 */
+#s02 .contrib,#s04 .contrib{background:var(--paper);border:1px solid var(--accent)}
 
 /* 01 detail mockup showcase (단일 컬럼 · 크게 · 넉넉한 여백) */
 .dshots{display:flex;flex-direction:column;gap:72px}
@@ -127,37 +189,45 @@ img{display:block;max-width:100%}
 .vt .playbadge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;padding-left:2px;pointer-events:none}
 
 /* 05/06 magazine rows (image left · text right) */
-.mag{display:flex;flex-direction:column;gap:46px}
-.magrow{display:grid;grid-template-columns:1fr 1fr;gap:46px;align-items:center}
+/* 제품이 계속 추가될 예정이라 고정 열 대신 자동 반응형으로 변경 — 카드 최소폭(160px)만 넘으면
+   화면 폭에 맞춰 알아서 열 개수를 정하고, 마지막 줄에 개수가 안 맞아도(예: 7개→6+1) 자연스럽게
+   왼쪽 정렬로 남는다(대부분의 쇼핑몰 상품 그리드와 동일한 일반적인 동작이라 어색하지 않음) */
+.prodgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+/* 카드 세로 방향 flex로 바꿔서, 컨셉 문장 길이가 카드마다 달라도 "실제 제품 보러가기" 링크가
+   항상 카드 맨 아래 같은 높이에 맞춰지도록 함(margin-top:auto로 아래로 밀어붙임) */
+.prodcard{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper);transition:.25s}
+.prodcard:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.prodimg{aspect-ratio:1/1;overflow:hidden;background:var(--card)}
+.prodimg img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
+.prodbd{flex:1;display:flex;flex-direction:column;padding:12px 14px 14px}
+.prodbd h5{font-size:13.5px;font-weight:700;line-height:1.4;margin-bottom:8px}
+.prodbadges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.prodbd .contrib{margin-top:0;font-size:10.5px;padding:2px 8px}
+.achieve{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;color:#fff;background:var(--accent);border-radius:100px;padding:2px 8px;letter-spacing:.01em}
+.prodbd p{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
+.prodlink{margin-top:auto;font-size:11.5px;font-weight:700;color:var(--accent-deep);display:inline-flex;align-items:center;gap:3px}
+.prodlink:hover{color:var(--accent)}
+.magrow{display:grid;grid-template-columns:3fr 2fr;gap:40px;align-items:center}
 .magrow .im{border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:var(--card);cursor:zoom-in}
 .magrow .im img{width:100%}
-.magrow .bd h3{font-size:clamp(19px,2.4vw,26px);font-weight:800;letter-spacing:-.02em;line-height:1.3;margin-bottom:14px}
+.magrow .bd h3{display:inline-block;font-size:clamp(17px,2.4vw,24px);font-weight:400;letter-spacing:-.02em;line-height:1.3;margin-bottom:14px;background:var(--accent);color:#fff;padding:7px 15px;border-radius:6px}
 .magrow .bd p{font-size:15px;color:var(--ink-soft);line-height:1.8}
-.rolebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:20px}
-.rolebar .role{font-size:12.5px;font-weight:700;color:var(--ink-soft);border:1px solid var(--line-strong);border-radius:100px;padding:5px 13px}
-.rolebar .contrib{margin-top:0}
 
-/* 구조화 설명: 리드문 · 핵심 포인트 · 성과 지표 */
+/* 구조화 설명: 리드문 · 성과 지표 */
 .magrow .bd .lead-p{font-size:15px;color:var(--ink-soft);line-height:1.8;margin-bottom:16px}
-.points{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
-.points li{position:relative;padding-left:26px;font-size:14.5px;color:var(--ink);line-height:1.6}
-.points li::before{content:"✓";position:absolute;left:0;top:1px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1}
-.resbar{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
-.res{flex:1;min-width:130px;background:var(--paper-2);border:1px solid var(--accent);border-radius:12px;padding:13px 16px}
-.res .v{font-size:clamp(16px,2vw,19px);font-weight:800;color:var(--accent-deep);letter-spacing:-.01em;line-height:1.2}
-.res .k{font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-top:4px}
 
-/* 케이스 스터디(자사몰 고도화) — 텍스트 + 아래 요약 */
+/* 케이스 스터디(자사몰 고도화) — 이미지 우측(bd) 안에 리드문+진행과정+역할+스탯+비교박스까지 전부 포함 */
 .case{display:flex;flex-direction:column;gap:34px}
-.case-sum{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px}
-.sum-title{font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ink);margin-bottom:16px;display:flex;align-items:center;gap:9px}
-.sum-title::before{content:"";width:18px;height:2px;background:var(--accent);border-radius:2px}
-.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
-.statcard{background:var(--paper);border:1px solid var(--line-strong);border-radius:12px;padding:20px}
-.statcard .cap{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:9px}
-.statcard .big{font-size:clamp(17px,2vw,22px);font-weight:800;color:var(--accent-deep);letter-spacing:-.01em;line-height:1.25}
-.statcard .lab{margin-top:7px;font-size:13px;color:var(--ink-soft);font-weight:600;line-height:1.5}
+.steps{list-style:none;display:flex;flex-direction:column;gap:8px;margin:2px 0 4px}
+.steps li{position:relative;padding-left:16px;font-size:14px;color:var(--ink);line-height:1.6}
+.steps li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+/* bd(이미지 우측 컬럼) 안의 핵심 사실 3가지 — 카드 대신 작은 배지로 압축 표시 */
+.projfacts{display:flex;flex-wrap:nowrap;gap:8px;margin:22px 0 26px}
+.projfacts .contrib{white-space:nowrap}
+.projfacts .contrib{margin-top:0;background:var(--paper);border:1px solid var(--accent)}
+/* bd는 폭이 좁아서, 비교 박스는 옆으로 나열하지 않고 세로로 쌓음 */
+.bd .compare{grid-template-columns:1fr}
 .cbox{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:22px}
 .cbox .clab{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.04em;padding:5px 13px;border-radius:100px;margin-bottom:15px}
 .cbox.before .clab{background:rgba(23,48,46,.07);color:var(--ink-soft)}
@@ -178,10 +248,6 @@ img{display:block;max-width:100%}
 
 /* about compact */
 .about{background:var(--paper)}
-.about-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:50px;align-items:start}
-.about-grid .lead{font-size:clamp(20px,2.6vw,30px);font-weight:800;letter-spacing:-.02em;line-height:1.35;margin-bottom:22px}
-.about-grid .lead .hl{color:var(--accent)}
-.about-grid .bd p{font-size:15px;color:var(--ink-soft);line-height:1.8;margin-bottom:14px}
 .about-head{margin-bottom:44px}
 .about-head .lead{font-size:clamp(24px,3.4vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.3;margin-bottom:18px}
 .about-head .lead .hl{color:var(--accent)}
@@ -197,7 +263,7 @@ img{display:block;max-width:100%}
 .story-one{padding:4px 0}
 .story-one p{font-size:16px;color:var(--ink-soft);line-height:1.9}
 .story-one p+p{margin-top:18px}
-.story-one b{color:var(--accent-deep);font-weight:700}
+.story-one b{color:var(--accent);font-weight:700}
 .story-quote{margin-top:48px;text-align:center;font-size:clamp(19px,2.6vw,28px);font-weight:800;letter-spacing:-.02em;line-height:1.5;color:var(--ink)}
 .story-quote .hl{color:var(--accent)}
 
@@ -210,9 +276,8 @@ img{display:block;max-width:100%}
 .cv .co .conote{font-size:13px;font-weight:400;color:var(--ink-soft);letter-spacing:0;margin-left:7px}
 .cv .ro{font-size:12.5px;color:var(--muted);font-weight:600;margin:2px 0 5px}
 .cv .du{font-size:13px;color:var(--ink-soft);line-height:1.55}
-.cvmeta{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
-.cvmeta span{font-size:12px;font-weight:600;border:1px solid var(--line-strong);border-radius:100px;padding:6px 13px;color:var(--ink-soft)}
-.cvmeta b{color:var(--accent)}
+.cvmeta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.cvmeta span{font-size:12.5px;font-weight:700;background:none;border:1px solid var(--accent);color:var(--accent-deep);border-radius:8px;padding:4px 11px}
 
 /* 카테고리 구분 가로 라인 */
 .hr{height:1px;background:var(--line-strong)}
@@ -232,10 +297,10 @@ img{display:block;max-width:100%}
 .foot .copy{margin-top:30px;font-size:11px;letter-spacing:.1em;color:rgba(234,246,244,.4)}
 
 /* lightbox */
-.lb{position:fixed;inset:0;z-index:100;background:rgba(8,24,22,.94);display:none;overflow:auto;padding:40px 16px;cursor:zoom-out}
+.lb{position:fixed;inset:0;z-index:100;background:rgba(8,24,22,.94);display:none;padding:40px 16px;cursor:zoom-out}
 .lb.on{display:flex}
-.lb img{max-width:880px;width:100%;margin:auto;border-radius:8px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
-.lb .lb-vid{max-width:880px;width:100%;margin:auto;border-radius:8px;box-shadow:0 30px 80px rgba(0,0,0,.5);background:#000}
+.lb img{max-width:min(880px,92vw);max-height:calc(100vh - 80px);width:auto;height:auto;margin:auto;border-radius:8px;box-shadow:0 30px 80px rgba(0,0,0,.5);object-fit:contain}
+.lb .lb-vid{max-width:min(880px,92vw);max-height:calc(100vh - 80px);width:auto;height:auto;margin:auto;border-radius:8px;box-shadow:0 30px 80px rgba(0,0,0,.5);background:#000;object-fit:contain}
 .lb img[hidden],.lb .lb-vid[hidden]{display:none}
 .lb .lbcap{display:none}
 .lb.vidcap .lbcap{display:block;position:fixed;right:24px;bottom:18px;font-size:12px;color:rgba(210,210,210,.6);letter-spacing:-.01em;pointer-events:none}
@@ -258,22 +323,38 @@ img{display:block;max-width:100%}
   .showcase,.pjgrid{grid-template-columns:1fr 1fr}
   .masonry{column-count:2}
   .tiles{grid-template-columns:repeat(2,1fr)}
-  .about-grid{grid-template-columns:1fr;gap:32px}
   .story-grid{grid-template-columns:1fr}
+  .hero-grid{grid-template-columns:1fr;gap:36px}
   .cv{grid-template-columns:1fr}
-  .minimap{grid-template-columns:1fr 1fr}
   .magrow{grid-template-columns:1fr;gap:24px}
+  .prodgrid{grid-template-columns:repeat(3,1fr)}
   .compare{grid-template-columns:1fr}
   .steps{grid-template-columns:repeat(2,1fr)}
+  .airow{grid-template-columns:1fr;gap:22px}
+  /* 세로로 쌓이는 화면에서는 영상 커버(9:16)가 폭 100%를 그대로 따라가며 지나치게 길어지므로,
+     이미지는 자르지 않고 폭만 살짝 줄여서(가로세로 비율 유지) 전체적으로 약 15% 작게 보이게 함 */
+  .airow>.aimedia{width:85%;margin:0 auto}
+  /* 세로 한 컬럼으로 쌓이는 화면에서는 "남는 높이만큼 채우기"가 의미 없으므로 고정 비율 정사각형으로 전환 */
+  .aiconcepts.featured{flex:0 0 auto;align-items:flex-start}
+  .aiconcepts.featured .aimedia.sub{width:min(220px,45%);height:auto;max-width:none}
+  .chatbox{height:400px;max-width:640px}
+  .chatview{padding:22px 34px}
+  .bubble{max-width:88%}
+  .bubble.a{max-width:88%}
 }
 @media(max-width:560px){
   .brand .en{display:none}
+  .hero-grid .hero-copy h1{font-size:42px}
+  .projfacts{flex-wrap:wrap}
   .showcase,.pjgrid{grid-template-columns:1fr}
   .masonry{column-count:1}
+  .prodgrid{grid-template-columns:repeat(2,1fr)}
   .cv .row{grid-template-columns:1fr;gap:4px}
-  .minimap{grid-template-columns:1fr}
   .dshots{grid-template-columns:1fr}
   .vthumbs{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}
-  .stats3{grid-template-columns:1fr}
   .steps{grid-template-columns:1fr}
+  .chatbox{height:440px}
+  .chatview{padding:18px 20px}
+  .bubble{max-width:96%}
+  .bubble.a{max-width:96%}
 }
