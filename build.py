@@ -4,6 +4,7 @@ OUT=os.path.dirname(os.path.abspath(__file__))
 # style.css 캐시 버스팅용 — 빌드할 때마다 파일 수정시각을 쿼리스트링으로 붙여서, CSS만 바꾸고 재빌드해도
 # 브라우저가 예전 캐시된 CSS를 계속 쓰는 문제(여러 번 반복됐던 버그)를 원천적으로 막는다.
 CSS_VER=int(os.path.getmtime(os.path.join(OUT,"style.css"))) if os.path.exists(os.path.join(OUT,"style.css")) else 0
+FAVICON_VER=int(os.path.getmtime(os.path.join(OUT,"favicon.svg"))) if os.path.exists(os.path.join(OUT,"favicon.svg")) else 0
 
 # 이미지/영상 캐시 버스팅용 — style.css와 같은 이유. 같은 파일명으로 사진·영상만 교체했을 때
 # 브라우저가 예전 캐시를 계속 보여주는 문제(선크림·음료수 커버 이미지 교체 때 실제로 발생)를 막는다.
@@ -304,6 +305,7 @@ html=f'''<!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>김근하 — 웹 디자이너 포트폴리오</title>
 <meta name="description" content="웹 디자이너 김근하 포트폴리오 — 상세페이지·패키지·편집디자인·촬영·상품기획">
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v={FAVICON_VER}">
 <link rel="stylesheet" href="style.css?v={CSS_VER}">
 </head><body>
 
@@ -325,7 +327,7 @@ html=f'''<!doctype html><html lang="ko"><head>
       <div class="kv"><span class="k">이름</span><span class="v">김근하</span></div>
       <div class="kv"><span class="k">연락처</span><span class="v"><a href="tel:01023861832">010-2386-1832</a></span></div>
       <div class="kv"><span class="k">이메일</span><span class="v"><a href="mailto:ziziba81@naver.com">ziziba81@naver.com</a></span></div>
-      <div class="kv"><span class="k">학력</span><span class="v">전북과학대학 컴퓨터디자인과 졸업</span></div>
+      <div class="kv"><span class="k">학력</span><span class="v">정인대학 컴퓨터디자인과 졸업</span></div>
       <div class="kv"><span class="k">자격증</span><span class="v">컴퓨터그래픽스 산업기사 · 컬러리스트 산업기사</span></div>
       <div class="kv"><span class="k">Tools</span><span class="v"><div class="tags"><span>Photoshop</span><span>Illustrator</span><span>Figma</span><span>AI (이미지·영상)</span><span>AI 콘텐츠 제작</span></div></span></div>
     </div>
