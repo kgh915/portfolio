@@ -56,6 +56,7 @@ img{display:block;max-width:100%}
 .sec-head h2{font-size:clamp(26px,4vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1.05}
 .sec-head p{margin-top:12px;color:var(--ink-soft);font-size:15px;max-width:none}
 .sec-head .vhint{display:block;margin-top:9px;font-size:14px;font-weight:700;color:var(--accent-deep)}
+.sec-head .contrib+.vhint{margin-top:14px}  /* 배지 아래로 옮긴 안내 문구(패키지) */
 
 /* profile — 이제 히어로 우측에 위치 */
 .profile{border:1px solid var(--line-strong);border-radius:16px;padding:16px 26px;background:var(--card)}
@@ -156,7 +157,7 @@ img{display:block;max-width:100%}
 .contrib{display:inline-flex;align-items:center;margin-top:14px;font-size:12.5px;font-weight:700;color:var(--accent-deep);background:var(--paper-2);border-radius:8px;padding:5px 12px;letter-spacing:.01em}
 .sec-head .contrib+.contrib{margin-left:8px}
 /* 민트 배경 섹션(패키지·사진촬영)에서는 배지 배경이 섹션 배경과 같아 안 보이므로 흰 배경+테두리로 구분 */
-#s02 .contrib,#s04 .contrib{background:var(--paper);border:1px solid var(--accent)}
+#s02 .contrib,#s03 .contrib,#s04 .contrib{background:var(--paper);border:1px solid var(--accent)}
 
 /* 01 detail mockup showcase (단일 컬럼 · 크게 · 넉넉한 여백) */
 .dshots{display:flex;flex-direction:column;gap:72px}
@@ -431,3 +432,15 @@ img{display:block;max-width:100%}
 .mockphone{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .dshots .dshot:first-child .mockscroll img{width:100%;max-width:none;max-height:none;height:auto;object-fit:fill}
 .dshots .dshot:first-child img.mockphone{width:100%;height:100%;max-width:none;max-height:none;object-fit:fill}
+/* 패키지 코너 설명 — 큰 이미지 바로 아래 (팝업 설명박스와 같은 구성, 밝은 배경용 색) */
+.vnote{background:rgba(255,255,255,.5);border:1px solid #fff;border-radius:14px;padding:28px 34px 26px;color:var(--ink)}  /* 배경 흰색 50%(민트가 은은하게 비침) + 테두리 흰색 100% */
+.vnote[hidden]{display:none}
+.vnote h3{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.35;color:var(--ink)}
+.vnote h3+.dprow{margin-top:18px}
+.vnote .dproles span{color:var(--ink)}
+.vnote .dproles.dptools span{color:var(--ink)}
+.vnote .dproles.dptools span+span::before{color:var(--ink-soft)}
+.vnote .dpsw{border-color:rgba(23,48,46,.18)}
+.vnote>.dplabel{margin-top:18px}
+.vnote p{margin-top:6px;font-size:15px;line-height:1.75;color:var(--ink-soft)}
+@media(max-width:560px){.vnote{padding:22px 20px}.vnote h3{font-size:18px}.vnote p{font-size:14px}}

@@ -30,7 +30,7 @@ DETAIL_INITIAL=20  # 처음에 보일 미리보기 개수 (나머지는 「더�
 PHOTO_INITIAL=20   # 사진 촬영 섹션 처음에 보일 개수
 detail_desc="PC와 모바일 어디서나 가독성과 설득력을 잃지 않는 상세페이지입니다. 제품의 핵심 가치를 한눈에 전달하고, 감각적이고 트렌디한 비주얼로 구매 전환까지 이끄는 것을 목표로 작업했습니다. 공기청정기·건강기능·뷰티·생활용품 등 다양한 카테고리의 상세페이지를 기획부터 디자인, 제품 촬영까지 직접 진행했습니다."
 
-package=["pk01","pk01-1","pk02","pk02-1","pk04","pk04-1","pk05","pk05-1","pk03","pk06","pk07"]  # pk06: 바디프라임 비강확장기, pk07: 시하미나 여성청결제 단상자 도면(패키지 2026 폴더)
+package=["pk01","pk02","pk04","pk05","pk03","pk06","pk07"]  # 3D 목업 영상(pk01-1·pk02-1·pk04-1·pk05-1)은 의뢰인 요청으로 숨김(파일은 assets에 남겨둠). pk06 바디프라임 비강확장기, pk07 시하미나 단상자 도면
 editorial=["ed01","ed02","ed03","ed04","ed05","ed06","ed07","ed08"]
 photo=autoseq("ph")  # assets 폴더의 ph01,ph02… 를 자동 인식 (파일만 넣으면 추가됨)
 
@@ -315,6 +315,36 @@ def media(im):
     src,cut=asset(im)
     return {"kind":"image","src":src,"poster":"","cut":cut}
 
+# 패키지 코너 설명 — 큰 이미지 바로 아래에 표시, 작은 이미지를 누르면 해당 제품 설명으로 바뀜.
+# 키는 제품 기본 이름(pk01-1 영상은 pk01 설명을 함께 씀). shot=True면 제품촬영 100% + DSLR 카메라 추가.
+PACKAGE_NOTES={
+ "pk01":dict(title="하이메디 힐패드",shot=True,colors=["#EBE897","#FFFCF2","#5A503B"],
+   concept="버터 옐로와 크림 화이트로 발 관리 제품의 부드럽고 촉촉한 이미지를 잡고, 손글씨 카피와 잎사귀 일러스트로 의료용품의 딱딱함을 덜었습니다. 앞면에는 착용 컷과 돋보기 클로즈업으로 실리콘 코팅 효과를 보여주고, 보습·각질 케어 같은 효능을 원형 아이콘으로 정리해 진열대에서도 한눈에 읽히도록 했습니다."),
+ "pk02":dict(title="하이메디 가래뚝",shot=True,colors=["#1F3E8C","#F4F6FA","#E2312F"],
+   concept="가래를 '뚝' 끊어낸다는 제품명의 의미를 살려, 굵은 붓글씨 타이포와 힘 있는 붓 터치로 시원한 효과를 표현했습니다. 신뢰감 있는 네이비와 화이트를 바탕에 두고 폐 일러스트와 레드 포인트로 사용 목적을 바로 이해하게 했으며, 측면에는 사용법 사진과 작동 원리를 단계별로 담았습니다."),
+ "pk04":dict(title="하이메디 Compression 종아리 서포트",shot=False,colors=["#1A6E73","#F4F6F6","#F2D21B"],
+   concept="다리 붓기와 피로를 덜어주는 압박 서포트라 딥 틸 그린을 메인으로 써서 의료기기의 신뢰감과 산뜻함을 함께 담았습니다. 'Compression Therapy' 영문 타이포를 크게 배치하고 다리 라인을 감싸는 옐로 곡선으로 압박 효과를 시각화했으며, 뒷면에는 사이즈 표와 인증 마크를 정리해 구매 전 확인이 쉽도록 했습니다."),
+ "pk05":dict(title="하이메디 힘찬벨트",shot=True,colors=["#151515","#FFFFFF","#E52521"],
+   concept="강한 지지력을 앞세운 허리 벨트라 블랙 바탕에 레드·화이트 볼드 타이포를 써서 '힘'이 느껴지는 강렬한 인상을 만들었습니다. 도르래 시스템의 작동 원리를 화살표 그래픽과 확대 컷으로 보여주고 블루 라인으로 허리를 받쳐주는 구조를 강조했으며, 측면에는 사이즈와 착용법을 정리했습니다."),
+ "pk03":dict(title="하이메디 홀이중 허리보호대",shot=True,colors=["#8E7B6B","#F5EFE6","#E0262B"],
+   concept="홀 이중 구조의 허리보호대라 웜 토프 브라운과 베이지를 메인으로 써서 편안하고 부드러운 착용감을 전달했습니다. 브랜드 레드 띠지와 제품명으로 시선을 모으고 인증 마크와 기능 아이콘을 하단에 모아 신뢰를 더했으며, 뒷면에는 착용 순서를 일러스트로 정리해 처음 쓰는 분도 쉽게 따라 하도록 했습니다."),
+ "pk06":dict(title="바디프라임 클립 비강확장기",shot=False,colors=["#1F3C88","#F5F7FB","#9CC3EE"],
+   concept="의료기기다운 신뢰감을 위해 딥 네이비와 화이트를 기본으로 쓰고, 클립 모양을 크게 살린 반투명 그래픽으로 제품을 직관적으로 보여줬습니다. 'body prime' 손글씨 로고와 도트 패턴으로 딱딱하지 않은 인상을 더했고, 'XS·S·M·L 사이즈 모두 증정' 같은 핵심 혜택을 하단에 배치해 구매 이유를 분명히 했습니다."),
+ "pk07":dict(title="시하미나 실크 바이오틱스 여성청결제",shot=False,colors=["#FFFFFF","#111111"],
+   concept="실크 바이오틱스 여성청결제의 고급스러움을 위해 컬러를 덜어내고 블랙 1도 인쇄만으로 완성했습니다. 브랜드 이니셜 'SM' 모노그램을 상자 두 면에 걸칠 만큼 크게 키워 진열했을 때 하나의 그래픽처럼 보이게 했고, 뚜껑 윗면 엠블럼과 정돈된 표기사항 레이아웃으로 절제된 프리미엄 무드를 만들었습니다."),
+}
+PACKAGE_TOOLS=["Adobe Photoshop","Adobe Illustrator"]
+def pkg_note_html(key,n,active):
+    roles="기획·디자인"+("·제품촬영" if n["shot"] else "")+" 100%"  # 상세페이지와 같은 '역할 → %' 순서
+    tools=PACKAGE_TOOLS+(["DSLR 카메라"] if n["shot"] else [])
+    tools_html=''.join(f'<span>{html.escape(t)}</span>' for t in tools)
+    sw=''.join(f'<span class="dpsw" style="background:{c}" title="{c}"></span>' for c in n["colors"][:3])
+    return (f'<div class="vnote" data-for="{key}"{"" if active else " hidden"}><h3>{html.escape(n["title"])}</h3>'
+            f'<div class="dprow"><div class="dplabel">기여도</div><div class="dproles"><span>{roles}</span></div></div>'
+            f'<div class="dprow"><div class="dplabel">사용툴</div><div class="dproles dptools">{tools_html}</div></div>'
+            f'<div class="dprow"><div class="dplabel">컬러무드</div><div class="dpcolors">{sw}</div></div>'
+            f'<div class="dplabel">기획 컨셉</div><p>{html.escape(n["concept"])}</p></div>')
+
 def viewer(ids):
     items=[media(im) for im in ids]
     def thumb(i,it):
@@ -326,6 +356,12 @@ def viewer(ids):
         return (f'<button class="vt{cutc}{active}" data-kind="image" data-src="{it["src"]}" data-cut="{1 if it["cut"] else 0}">'
                 f'<img src="{it["src"]}" loading="lazy" alt=""></button>')
     thumbs=''.join(thumb(i,it) for i,it in enumerate(items))
+    # 제품 설명(패키지 코너만 해당) — 썸네일마다 어떤 설명을 보여줄지 data-note로 연결
+    keys=[im.split("-")[0] for im in ids]
+    notes_html=''.join(pkg_note_html(k,PACKAGE_NOTES[k],k==keys[0]) for k in dict.fromkeys(keys) if k in PACKAGE_NOTES)
+    if notes_html:
+        tl=[thumb(i,it) for i,it in enumerate(items)]
+        thumbs=''.join(t.replace('<button ',f'<button data-note="{keys[i]}" ',1) if keys[i] in PACKAGE_NOTES else t for i,t in enumerate(tl))
     f=items[0]
     if f["kind"]=="video":
         cls=" video";data_cut="0"
@@ -335,7 +371,7 @@ def viewer(ids):
         big=f'<img class="vm-img" src="{f["src"]}" alt=""><video class="vm-vid" muted loop playsinline hidden></video>'
     return f'''<div class="viewer reveal">
     <div class="vmain{cls}" data-full="{f["src"]}" data-cut="{data_cut}" data-kind="{f["kind"]}" data-poster="{f["poster"]}">{big}<span class="vcap">AI를 이용하여 제작된 3D 목업 영상입니다</span></div>
-    <div class="vthumbs">{thumbs}</div>
+    {notes_html}<div class="vthumbs">{thumbs}</div>
   </div>'''
 
 # 자사몰 고도화 — 아래 요약(지표 카드 · 기존/개선 비교)
@@ -531,23 +567,23 @@ html=f'''<!doctype html><html lang="ko"><head>
 <div class="wrap"><div class="hr"></div></div>
 
 <section class="sec" id="s01"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Product Detail</div><h2>상세페이지 디자인</h2><p>{detail_desc}</p><span class="contrib">Photoshop</span><span class="contrib">제품촬영</span><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Product Detail</div><h2>상세페이지 디자인</h2><p>{detail_desc}</p></div>
   <div class="dshots reveal">{detail_html}</div>
   <div class="reveal">{dp_html}</div>
 </div></section>
 
 <section class="sec" id="s02" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Package</div><h2>패키지 디자인</h2><p>브랜드의 특징을 효과적으로 전달하기 위해 패키지 디자인을 기획하고, <b>소비자의 시선을 끌 수 있는 컬러와 레이아웃</b>을 적용해 제품 정보를 직관적으로 전달하는 것을 목표로 제작하였습니다.<span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></p><span class="contrib">Photoshop</span><span class="contrib">Illustrator</span><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Package</div><h2>패키지 디자인</h2><p>브랜드 무드와 제품 특징을 바탕으로 패키지 컬러와 컨셉을 기획하고, 시각적인 요소를 적절히 배치하여 <b>제품 정보와 디자인이 균형을 이루도록</b> 기획하였습니다.</p><span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></div>
   {viewer(package)}
 </div></section>
 
 <section class="sec" id="s03"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Editorial</div><h2>편집디자인</h2><p>잡지광고·포스터부터 브로셔·리플릿·메뉴판까지 — 제품과 브랜드 성격에 맞춘 <b>다양한 컨셉의 편집물</b>을 기획·디자인했습니다.<span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></p><span class="contrib">Photoshop</span><span class="contrib">Illustrator</span><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Editorial</div><h2>편집디자인</h2><p>잡지광고·포스터부터 브로셔·리플릿·메뉴판까지 — 제품과 브랜드 성격에 맞춘 <b>다양한 컨셉의 편집물</b>을 기획·디자인했습니다.</p><span class="contrib">Photoshop</span><span class="contrib">Illustrator</span><span class="contrib">기여도 100%</span><span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></div>
   {viewer(editorial)}
 </div></section>
 
 <section class="sec" id="s04" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Photography</div><h2>사진 촬영</h2><p>DSLR을 이용한 제품·인물 직접 촬영. 조명과 연출을 설계해 디자인에 바로 쓰이는 결과물을 만듭니다.<span class="vhint">이미지를 누르면 크게 볼 수 있습니다</span></p><span class="contrib">캐논 5D Mark 4</span><span class="contrib">기여도 100%</span></div>
+  <div class="sec-head reveal"><div class="en">Photography</div><h2>사진 촬영</h2><p>제품의 특징과 분위기가 자연스럽게 전해지도록 <b>조명·구도·소품 연출을 직접 기획하고</b> 촬영하였습니다.</p><span class="contrib">캐논 5D Mark 4</span><span class="contrib">기여도 100%</span><span class="vhint">이미지를 클릭하면 크게 볼 수 있습니다</span></div>
   <div class="reveal">{tiles(photo,PHOTO_INITIAL)}</div>
 </div></section>
 
@@ -764,6 +800,7 @@ document.querySelectorAll('.viewer').forEach(v=>{{
       mimg.src=t.dataset.src;mimg.hidden=false;main.classList.remove('video');main.classList.toggle('cut',t.dataset.cut==='1');
     }}
     v.querySelectorAll('.vt').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+    if(t.dataset.note)v.querySelectorAll('.vnote').forEach(n=>n.hidden=n.dataset.for!==t.dataset.note);
   }}));
 }});
 const lb=document.getElementById('lb'),lbimg=lb.querySelector('img'),lbvid=lb.querySelector('.lb-vid'),lbcap=lb.querySelector('.lbcap'),lbPlay=document.getElementById('lbPlay');
