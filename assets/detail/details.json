@@ -70,7 +70,8 @@
   "tools": [
    "Adobe Photoshop",
    "DSLR 카메라"
-  ]
+  ],
+  "hidden": true
  },
  {
   "id": "dp45",
