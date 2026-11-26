@@ -374,35 +374,47 @@ document.querySelectorAll('.moregroup').forEach(g=>{
 })();
 '''
 
+# ── 페이지 고정 문구(제목·소개·프로필·About·푸터) — data/site.json의 texts ─────────
+T=SITE["texts"]; C=T["contact"]; S=T["sections"]
+def esc(x): return html.escape(x,quote=False)
+def spans(items): return ''.join(f'<span>{esc(x)}</span>' for x in items)
+def contribs(items): return ''.join(f'<span class="contrib">{esc(x)}</span>' for x in items)
+def hint(sec): return f'<span class="vhint">{esc(sec["hint"])}</span>' if sec.get("hint") else ''
+TEL=C["phone"].replace("-","")
+tel_link=f'<a href="tel:{TEL}">{esc(C["phone"])}</a>'
+mail_link=f'<a href="mailto:{C["email"]}">{esc(C["email"])}</a>'
+career_badges='\n'.join(f'      <span>{esc(x)}</span>' for x in S["career"]["badges"])
+about_html='\n'.join(f'    <p>{p}</p>' for p in T["about"]["paragraphs"])  # About 문단은 <br>·<b> 허용
+
 html=f'''<!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>김근하 — 웹 디자이너 포트폴리오</title>
-<meta name="description" content="웹 디자이너 김근하 포트폴리오 — 상세페이지·패키지·편집디자인·촬영·상품기획">
+<title>{esc(T["meta"]["title"])}</title>
+<meta name="description" content="{html.escape(T["meta"]["description"])}">
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v={FAVICON_VER}">
 <link rel="stylesheet" href="style.css?v={CSS_VER}">
 </head><body>
 
 <nav class="nav" id="nav">
-  <a href="#top" class="brand"><span class="ko">김근하</span><span class="en">KIM GEUNHA · WEB DESIGNER</span></a>
+  <a href="#top" class="brand"><span class="ko">{esc(C["name"])}</span><span class="en">{esc(C["name_en"])}</span></a>
   <div class="nav-links"><a href="#s01">Work</a><a href="#about">About</a><a href="#contact">Contact</a></div>
 </nav>
 
 <header class="hero" id="top"><div class="wrap">
   <div class="hero-grid">
     <div class="hero-copy">
-      <div class="eyebrow reveal">Portfolio · 2026</div>
-      <h1 class="reveal">긍정의 마인드,<br><span class="mark">무한한 가능성</span></h1>
-      <p class="hero-sub reveal">본질을 먼저 이해하고, 마음을 움직이는 디자인을 고민합니다.</p>
-      <div class="hero-meta reveal"><span>기획 · 디자인 · 촬영</span><span class="dot"></span><span>신제품 개발 · 자사몰 운영</span></div>
+      <div class="eyebrow reveal">{esc(T["hero"]["eyebrow"])}</div>
+      <h1 class="reveal">{esc(T["hero"]["title1"])}<br><span class="mark">{esc(T["hero"]["title2"])}</span></h1>
+      <p class="hero-sub reveal">{esc(T["hero"]["sub"])}</p>
+      <div class="hero-meta reveal">{'<span class="dot"></span>'.join(f'<span>{esc(x)}</span>' for x in T["hero"]["meta"])}</div>
     </div>
     <div class="profile reveal">
-      <h3>Profile</h3>
-      <div class="kv"><span class="k">이름</span><span class="v">김근하</span></div>
-      <div class="kv"><span class="k">연락처</span><span class="v"><a href="tel:01023861832">010-2386-1832</a></span></div>
-      <div class="kv"><span class="k">이메일</span><span class="v"><a href="mailto:ziziba81@naver.com">ziziba81@naver.com</a></span></div>
-      <div class="kv"><span class="k">학력</span><span class="v">정인대학 컴퓨터디자인과 졸업</span></div>
-      <div class="kv"><span class="k">자격증</span><span class="v">컴퓨터그래픽스 산업기사 · 컬러리스트 산업기사</span></div>
-      <div class="kv"><span class="k">Tools</span><span class="v"><div class="tags"><span>Photoshop</span><span>Illustrator</span><span>Figma</span><span>AI (이미지·영상)</span><span>AI 콘텐츠 제작</span></div></span></div>
+      <h3>{esc(T["profile"]["title"])}</h3>
+      <div class="kv"><span class="k">이름</span><span class="v">{esc(C["name"])}</span></div>
+      <div class="kv"><span class="k">연락처</span><span class="v">{tel_link}</span></div>
+      <div class="kv"><span class="k">이메일</span><span class="v">{mail_link}</span></div>
+      <div class="kv"><span class="k">학력</span><span class="v">{esc(T["profile"]["education"])}</span></div>
+      <div class="kv"><span class="k">자격증</span><span class="v">{esc(T["profile"]["certificates"])}</span></div>
+      <div class="kv"><span class="k">Tools</span><span class="v"><div class="tags">{spans(T["profile"]["tools"])}</div></span></div>
     </div>
   </div>
 </div></header>
@@ -410,7 +422,7 @@ html=f'''<!doctype html><html lang="ko"><head>
 <div class="wrap"><div class="hr"></div></div>
 
 <section class="sec tight" id="interview"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Q&A</div><h2>인터뷰</h2><p>이력서에는 다 담지 못한 이야기를, 대화하듯 편하게 풀어봤습니다.</p></div>
+  <div class="sec-head reveal"><div class="en">{esc(S["interview"]["en"])}</div><h2>{esc(S["interview"]["title"])}</h2><p>{S["interview"]["desc"]}</p></div>
   <div class="chatbox reveal" id="chatbox" data-qa='{chat_qa_json}'>
     <div class="chatview" id="chatview"></div>
   </div>
@@ -419,19 +431,19 @@ html=f'''<!doctype html><html lang="ko"><head>
 <div class="wrap"><div class="hr"></div></div>
 
 <section class="sec tight" id="products"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Launched Products</div><h2>기획·출시 제품</h2><p>청송기획 재직 중 직접 기획에 참여한 제품 중, 매출 상위권 제품들을 대표로 소개합니다.</p></div>
+  <div class="sec-head reveal"><div class="en">{esc(S["products"]["en"])}</div><h2>{esc(S["products"]["title"])}</h2><p>{S["products"]["desc"]}</p></div>
   <div class="prodgrid">{products_html}</div>
 </div></section>
 
 <section class="sec" id="s06" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Flagship Project</div><h2>셀프 디자인 프로젝트</h2></div>
+  <div class="sec-head reveal"><div class="en">{esc(S["project"]["en"])}</div><h2>{esc(S["project"]["title"])}</h2></div>
   {proj_html}
 </div></section>
 
 <section class="sec tight" id="ai"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">AI Works</div><h2>AI 활용 작업물</h2>
-    <div class="aitools"><span>Claude Code</span><span>Nano Banana</span><span>ChatGPT</span><span>Flow</span><span>CapCut</span></div>
-    <p>실제 판매 중인 제품 5종을 소재로, 브랜드와는 무관하게 개인적으로 진행한 AI 이미지·영상 샘플 작업입니다.<span class="vhint">대표 이미지를 클릭하면 화면 가득 영상이 나오고, 재생 버튼을 누르면 소리와 함께 재생됩니다</span></p>
+  <div class="sec-head reveal"><div class="en">{esc(S["ai"]["en"])}</div><h2>{esc(S["ai"]["title"])}</h2>
+    <div class="aitools">{spans(S["ai"]["tools"])}</div>
+    <p>{S["ai"]["desc"]}{hint(S["ai"])}</p>
   </div>
   <div class="airows">{ai_html}</div>
 </div></section>
@@ -439,36 +451,30 @@ html=f'''<!doctype html><html lang="ko"><head>
 <div class="wrap"><div class="hr"></div></div>
 
 <section class="sec" id="s01"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Product Detail</div><h2>상세페이지 디자인</h2><p>{detail_desc}</p></div>
+  <div class="sec-head reveal"><div class="en">{esc(S["detail"]["en"])}</div><h2>{esc(S["detail"]["title"])}</h2><p>{detail_desc}</p></div>
   <div class="dshots reveal">{detail_html}</div>
   <div class="reveal">{dp_html}</div>
 </div></section>
 
 <section class="sec" id="s02" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Package</div><h2>패키지 디자인</h2><p>브랜드 무드와 제품 특징을 바탕으로 패키지 컬러와 컨셉을 기획하고, 시각적인 요소를 적절히 배치하여 <b>제품 정보와 디자인이 균형을 이루도록</b> 기획하였습니다.</p><span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></div>
+  <div class="sec-head reveal"><div class="en">{esc(S["package"]["en"])}</div><h2>{esc(S["package"]["title"])}</h2><p>{S["package"]["desc"]}</p>{contribs(S["package"]["badges"])}{hint(S["package"])}</div>
   {viewer(package)}
 </div></section>
 
 <section class="sec" id="s03"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Editorial</div><h2>편집디자인</h2><p>잡지광고·포스터부터 브로셔·리플릿·메뉴판까지 — 제품과 브랜드 성격에 맞춘 <b>다양한 컨셉의 편집물</b>을 기획·디자인했습니다.</p><span class="contrib">Photoshop</span><span class="contrib">Illustrator</span><span class="contrib">기여도 100%</span><span class="vhint">작은 이미지를 클릭하시면 큰 이미지로 볼 수 있습니다</span></div>
+  <div class="sec-head reveal"><div class="en">{esc(S["editorial"]["en"])}</div><h2>{esc(S["editorial"]["title"])}</h2><p>{S["editorial"]["desc"]}</p>{contribs(S["editorial"]["badges"])}{hint(S["editorial"])}</div>
   {viewer(editorial)}
 </div></section>
 
 <section class="sec" id="s04" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Photography</div><h2>사진 촬영</h2><p>제품의 특징과 분위기가 자연스럽게 전해지도록 <b>조명·구도·소품 연출을 직접 기획하고</b> 촬영하였습니다.</p><span class="contrib">캐논 5D Mark 4</span><span class="contrib">기여도 100%</span><span class="vhint">이미지를 클릭하면 크게 볼 수 있습니다</span></div>
+  <div class="sec-head reveal"><div class="en">{esc(S["photo"]["en"])}</div><h2>{esc(S["photo"]["title"])}</h2><p>{S["photo"]["desc"]}</p>{contribs(S["photo"]["badges"])}{hint(S["photo"])}</div>
   <div class="reveal">{tiles(photo,PHOTO_INITIAL)}</div>
 </div></section>
 
 <section class="sec tight" id="career"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">Career</div><h2>경력</h2>
+  <div class="sec-head reveal"><div class="en">{esc(S["career"]["en"])}</div><h2>{esc(S["career"]["title"])}</h2>
     <div class="cvmeta reveal">
-      <span>컴퓨터그래픽스 산업기사</span>
-      <span>컬러리스트 산업기사</span>
-      <span>Photoshop</span>
-      <span>Illustrator</span>
-      <span>Figma</span>
-      <span>AI (이미지·영상)</span>
-      <span>AI 콘텐츠 제작</span>
+{career_badges}
     </div>
   </div>
   <div class="cv reveal">{cv_html}</div>
@@ -478,20 +484,17 @@ html=f'''<!doctype html><html lang="ko"><head>
 
 <section class="sec about" id="about"><div class="wrap">
   <div class="about-head reveal">
-    <div class="lead"><span class="hl">Why not?</span></div>
+    <div class="lead"><span class="hl">{esc(T["about"]["lead"])}</span></div>
   </div>
   <div class="story-one reveal">
-    <p>해보지 않은 일 앞에서 ‘할 수 있을까?’보다<br><b>‘왜 안돼, 한번 해보자.’</b>라는 마음으로 시작합니다.</p>
-    <p>웹디자인을 시작으로 기획, 신제품 개발, 브랜드 운영, 디자인팀 총괄까지.<br>한 가지 역할에 머무르지 않고 필요하다면 새로운 영역을 배우고 제 것으로 만들어왔습니다.</p>
-    <p>그 과정에서 각각의 경험을 연결해 디자인을 넘어 제품과 브랜드 전체를 더 넓게 바라보는 시야를 갖게 되었습니다.</p>
-    <p>이제 그동안 쌓아온 저의 경험이<br>새로운 곳에서 가치 있게 쓰이길 바랍니다.</p>
+{about_html}
   </div>
 </div></section>
 
 <footer class="foot" id="contact"><div class="wrap">
-  <div class="big">기획부터 디자인까지,<br>끝까지 책임지겠습니다.</div>
-  <div class="info">웹 디자이너 김근하<br><a href="tel:01023861832">010-2386-1832</a><br><a href="mailto:ziziba81@naver.com">ziziba81@naver.com</a></div>
-</div><div class="wrap"><div class="copy">© 2026 KIM GEUNHA — PORTFOLIO. ALL RIGHTS RESERVED.</div></div></footer>
+  <div class="big">{T["footer"]["big"]}</div>
+  <div class="info">{esc(T["footer"]["role"])} {esc(C["name"])}<br>{tel_link}<br>{mail_link}</div>
+</div><div class="wrap"><div class="copy">{esc(T["footer"]["copy"])}</div></div></footer>
 
 <div class="lb" id="lb"><div class="x">×</div><div class="navbtn prev" id="lbPrev">‹</div><div class="navbtn next" id="lbNext">›</div><img src="" alt=""><video class="lb-vid" playsinline controls hidden></video><div class="lbplay" id="lbPlay" hidden>▶</div><span class="lbcap"></span></div>
 <div class="dpop" id="dpop" role="dialog" aria-modal="true"><button type="button" class="dpop-x" aria-label="닫기">×</button><button type="button" class="dpop-nav prev" aria-label="이전 상세페이지">‹</button><button type="button" class="dpop-nav next" aria-label="다음 상세페이지">›</button><div class="dpop-scroll"><div class="dpop-wrap"><div class="dpop-note" hidden></div><div class="dpop-body"></div></div></div></div>
@@ -764,3 +767,18 @@ addEventListener('keydown',e=>{{if(!lb.classList.contains('on'))return;if(e.key=
 with open(os.path.join(OUT,"index.html"),"w",encoding="utf-8") as f:
     f.write(html)
 print("built single-page index.html")
+
+# ── 배포용 폴더(dist) 만들기 ───────────────────────────────────────────
+# Vercel은 `python3 build.py --dist`로 사이트를 만든 뒤 dist 폴더만 공개함(vercel.json).
+# → 작업 기록(PROGRESS.md)·문서·도구·원본 데이터 같은 내부 파일은 방문자에게 공개되지 않음.
+import sys, shutil
+if "--dist" in sys.argv:
+    D=os.path.join(OUT,"dist")
+    shutil.rmtree(D,ignore_errors=True); os.makedirs(D)
+    for f in ("index.html","style.css","favicon.svg"):
+        shutil.copy2(os.path.join(OUT,f),D)
+    shutil.copytree(os.path.join(OUT,"assets"),os.path.join(D,"assets"),
+                    ignore=shutil.ignore_patterns("_orig_big",".DS_Store"))
+    if os.path.isdir(os.path.join(OUT,"admin")):   # 관리자 화면(3-4에서 추가)
+        shutil.copytree(os.path.join(OUT,"admin"),os.path.join(D,"admin"))
+    print("dist ready:",D)
