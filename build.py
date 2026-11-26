@@ -22,7 +22,12 @@ def autoseq(prefix):
     return out
 
 # 01 상세페이지 — 보존용 그대로 (태블릿+폰 목업 쇼케이스 + 보존용 설명글)
-detail_imgs=["ds01","ds02","ds03","ds04","ds05"]
+detail_imgs=["ds01"]  # 맨 위 태블릿·폰 목업만 유지 (ds02~05 4열 통이미지는 아래 미리보기 목록으로 교체됨)
+# 상세페이지 미리보기 목록 — assets/detail/details.json 순서대로 표시.
+# pages가 비어 있으면(상세페이지 원본 없음) 미리보기만 보이고 클릭해도 반응 없음 → 목록 뒤쪽에 둘 것.
+details=json.load(open(os.path.join(OUT,"assets","detail","details.json"),encoding="utf-8"))
+DETAIL_INITIAL=20  # 처음에 보일 미리보기 개수 (나머지는 「더보기」)
+PHOTO_INITIAL=20   # 사진 촬영 섹션 처음에 보일 개수
 detail_desc="PC와 모바일 어디서나 가독성과 설득력을 잃지 않는 상세페이지입니다. 제품의 핵심 가치를 한눈에 전달하고, 감각적이고 트렌디한 비주얼로 구매 전환까지 이끄는 것을 목표로 작업했습니다. 공기청정기·건강기능·뷰티·생활용품 등 다양한 카테고리의 상세페이지를 기획부터 디자인, 제품 촬영까지 직접 진행했습니다."
 
 package=["pk01","pk01-1","pk02","pk02-1","pk04","pk04-1","pk05","pk05-1","pk03"]
@@ -161,9 +166,18 @@ interview=[
 def masonry(ids):
     return '<div class="masonry">'+''.join(f'<div class="ph" data-full="assets/{i}.jpg"><img src="assets/{i}.jpg" loading="lazy" alt=""></div>' for i in ids)+'</div>'
 
+# 「더보기」 버튼 — 목록이 limit개보다 많을 때만 출력
+def more_btn(total,limit):
+    if total<=limit: return ''
+    return f'<div class="morewrap"><button type="button" class="morebtn" data-more="{total-limit}">더보기 <span>+{total-limit}</span></button></div>'
+
 # 동일 사이즈 썸네일 그리드(흰 배경 · 클릭 시 크게 보기 유지)
-def tiles(ids):
-    return '<div class="tiles">'+''.join(f'<div class="tile" data-full="assets/{i}.jpg"><img src="assets/{i}.jpg" loading="lazy" alt=""></div>' for i in ids)+'</div>'
+# 그리드에는 가벼운 -thumb 이미지(있을 때만), 크게 보기에는 원본 이미지. limit개 뒤는 「더보기」로 펼침
+def tiles(ids,limit=None):
+    def src(i):
+        return av(f"{i}-thumb.jpg") if os.path.exists(os.path.join(OUT,"assets",f"{i}-thumb.jpg")) else f"assets/{i}.jpg"
+    cells=''.join(f'<div class="tile{" more" if limit and n>=limit else ""}" data-full="assets/{i}.jpg"><img src="{src(i)}" loading="lazy" alt=""></div>' for n,i in enumerate(ids))
+    return f'<div class="moregroup"><div class="tiles">{cells}</div>{more_btn(len(ids),limit) if limit else ""}</div>'
 
 # 실제 출시 제품 카드 — 사진(클릭 시 크게 보기)+제품명+역할 배지(1개)+성과 배지+컨셉 한 줄+실제 판매 페이지 링크(보조용, 새 탭)
 # 전 제품 기획·촬영·상세페이지까지 의뢰인이 직접 담당해서, 역할 배지는 공통으로 고정.
@@ -220,6 +234,19 @@ chat_qa_json=html.escape(json.dumps(interview,ensure_ascii=False),quote=True)
 
 # 상세페이지 — 목업 쇼케이스(세로 나열)
 detail_html=''.join(f'<figure class="dshot"><img src="assets/{i}.jpg" loading="lazy" alt="상세페이지 디자인 목업"></figure>' for i in detail_imgs)
+
+# 상세페이지 미리보기 카드 — 클릭하면 상세페이지 전체가 팝업으로 열림(세로 스크롤).
+# 상세페이지가 여러 장이면(분할 파일) 순서대로 틈 없이 이어 붙여 보여줌. 데이터는 data-pages(JSON)에 담음.
+def dp_card(n,d):
+    more=" more" if n>=DETAIL_INITIAL else ""
+    img=f'<img src="{av(d["preview"])}" loading="lazy" alt="{html.escape(d["title"])} 상세페이지 미리보기">'
+    if not d["pages"]:
+        return f'<div class="dpcard nodetail{more}">{img}</div>'
+    pages=html.escape(json.dumps([[av(p["src"]),p["w"],p["h"]] for p in d["pages"]]),quote=True)
+    return (f'<button type="button" class="dpcard{more}" data-pages="{pages}" data-title="{html.escape(d["title"])}">'
+            f'{img}<span class="dpview">상세보기</span></button>')
+dp_html=(f'<div class="moregroup"><div class="dpgrid">{"".join(dp_card(n,d) for n,d in enumerate(details))}</div>'
+         f'{more_btn(len(details),DETAIL_INITIAL)}</div>')
 
 # 큰 이미지 + 하단 썸네일 뷰어(클릭 시 큰 이미지 교체) — 패키지·편집 공용
 # .png가 있으면 우선 사용. 단, 실제로 투명 영역이 있는 누끼 PNG만 대리석 배경 위에 그림자로 표시.
@@ -301,6 +328,41 @@ ICON_CHAT='<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap=
 ICON_HEART='<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
 ICON_UP='<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
 
+# 상세페이지 팝업 + 더보기/접기 스크립트 (f-string 밖에 두어 중괄호 이스케이프 불필요)
+DP_JS=r'''
+// 더보기 / 접기 — .moregroup 안의 .more 항목을 한꺼번에 펼치고 접음
+document.querySelectorAll('.moregroup').forEach(g=>{
+  const b=g.querySelector('.morebtn');if(!b)return;
+  b.addEventListener('click',()=>{
+    const open=g.classList.toggle('open');
+    b.innerHTML=open?'접기':'더보기 <span>+'+b.dataset.more+'</span>';
+    if(!open)b.scrollIntoView({block:'center'});
+  });
+});
+// 상세페이지 팝업 — 전체 화면, 팝업 안에서 위아래 스크롤. X 버튼·바깥 클릭·ESC로 닫힘
+// ‹ › 버튼(또는 ←/→ 키)으로 상세페이지가 있는 다음·이전 작업으로 바로 이동. 어떤 경우든 항상 맨 위부터 보여줌
+(function(){
+  const pop=document.getElementById('dpop'),body=pop.querySelector('.dpop-body'),scroller=pop.querySelector('.dpop-scroll');
+  const cards=[...document.querySelectorAll('.dpcard[data-pages]')];let cur=0;
+  function show(i){
+    cur=(i+cards.length)%cards.length;const card=cards[cur];
+    const pages=JSON.parse(card.dataset.pages);
+    body.innerHTML=pages.map((p,i)=>'<img src="'+p[0]+'" width="'+p[1]+'" height="'+p[2]+'" alt="" '+(i?'loading="lazy"':'')+'>').join('');
+    body.setAttribute('aria-label',card.dataset.title+' 상세페이지');
+    scroller.scrollTop=0;
+  }
+  function open(i){pop.classList.add('on');document.body.style.overflow='hidden';show(i);scroller.scrollTop=0;}
+  function close(){pop.classList.remove('on');document.body.style.overflow='';body.innerHTML='';}
+  cards.forEach((c,i)=>c.addEventListener('click',()=>open(i)));
+  pop.querySelector('.dpop-x').addEventListener('click',close);
+  pop.querySelector('.dpop-nav.prev').addEventListener('click',()=>show(cur-1));
+  pop.querySelector('.dpop-nav.next').addEventListener('click',()=>show(cur+1));
+  scroller.addEventListener('click',e=>{if(!body.contains(e.target))close();});
+  addEventListener('keydown',e=>{if(!pop.classList.contains('on'))return;
+    if(e.key==='Escape')close();else if(e.key==='ArrowLeft')show(cur-1);else if(e.key==='ArrowRight')show(cur+1);});
+})();
+'''
+
 html=f'''<!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>김근하 — 웹 디자이너 포트폴리오</title>
@@ -368,6 +430,7 @@ html=f'''<!doctype html><html lang="ko"><head>
 <section class="sec" id="s01"><div class="wrap">
   <div class="sec-head reveal"><div class="en">Product Detail</div><h2>상세페이지 디자인</h2><p>{detail_desc}</p><span class="contrib">Photoshop</span><span class="contrib">제품촬영</span><span class="contrib">기여도 100%</span></div>
   <div class="dshots reveal">{detail_html}</div>
+  <div class="reveal">{dp_html}</div>
 </div></section>
 
 <section class="sec" id="s02" style="background:var(--paper-2)"><div class="wrap">
@@ -382,7 +445,7 @@ html=f'''<!doctype html><html lang="ko"><head>
 
 <section class="sec" id="s04" style="background:var(--paper-2)"><div class="wrap">
   <div class="sec-head reveal"><div class="en">Photography</div><h2>사진 촬영</h2><p>DSLR을 이용한 제품·인물 직접 촬영. 조명과 연출을 설계해 디자인에 바로 쓰이는 결과물을 만듭니다.<span class="vhint">이미지를 누르면 크게 볼 수 있습니다</span></p><span class="contrib">캐논 5D Mark 4</span><span class="contrib">기여도 100%</span></div>
-  <div class="reveal">{tiles(photo)}</div>
+  <div class="reveal">{tiles(photo,PHOTO_INITIAL)}</div>
 </div></section>
 
 <section class="sec tight" id="career"><div class="wrap">
@@ -420,6 +483,7 @@ html=f'''<!doctype html><html lang="ko"><head>
 </div><div class="wrap"><div class="copy">© 2026 KIM GEUNHA — PORTFOLIO. ALL RIGHTS RESERVED.</div></div></footer>
 
 <div class="lb" id="lb"><div class="x">×</div><div class="navbtn prev" id="lbPrev">‹</div><div class="navbtn next" id="lbNext">›</div><img src="" alt=""><video class="lb-vid" playsinline controls hidden></video><div class="lbplay" id="lbPlay" hidden>▶</div><span class="lbcap"></span></div>
+<div class="dpop" id="dpop" role="dialog" aria-modal="true"><button type="button" class="dpop-x" aria-label="닫기">×</button><button type="button" class="dpop-nav prev" aria-label="이전 상세페이지">‹</button><button type="button" class="dpop-nav next" aria-label="다음 상세페이지">›</button><div class="dpop-scroll"><div class="dpop-body"></div></div></div>
 
 <script>
 const nav=document.getElementById('nav');
@@ -681,6 +745,7 @@ document.getElementById('lbNext').addEventListener('click',e=>{{e.stopPropagatio
 lbimg.addEventListener('click',e=>e.stopPropagation());
 lbvid.addEventListener('click',e=>e.stopPropagation());
 addEventListener('keydown',e=>{{if(!lb.classList.contains('on'))return;if(e.key==='Escape')close();else if(e.key==='ArrowLeft')show(gi-1);else if(e.key==='ArrowRight')show(gi+1);}});
+{DP_JS}
 </script>
 </body></html>'''
 

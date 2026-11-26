@@ -358,3 +358,41 @@ img{display:block;max-width:100%}
   .bubble{max-width:96%}
   .bubble.a{max-width:96%}
 }
+
+/* 상세페이지 미리보기 목록 (ds02~05 4열 통이미지를 개별 카드로 교체) */
+.dshots+.reveal{margin-top:72px}
+.dpgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px}
+.dpcard{position:relative;display:block;padding:0;border:0;background:#fff;aspect-ratio:307/787;overflow:hidden;border-radius:10px;box-shadow:var(--shadow);font:inherit}
+.dpcard img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.dpcard[data-pages]{cursor:pointer}
+.dpcard.nodetail{cursor:default}
+.dpcard .dpview{position:absolute;left:50%;bottom:18px;transform:translate(-50%,6px);padding:8px 18px;border-radius:999px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;white-space:nowrap;opacity:0;transition:.25s;pointer-events:none}
+.dpcard[data-pages]:hover .dpview,.dpcard[data-pages]:focus-visible .dpview{opacity:1;transform:translate(-50%,0)}
+/* 마우스 올림 — 아래 흐림까지 포함해 카드 전체를 35% 어둡게 */
+.dpcard::before{content:"";position:absolute;inset:0;background:#000;opacity:0;transition:opacity .25s;z-index:1;pointer-events:none}
+.dpcard[data-pages]:hover::before{opacity:.35}
+/* 아래쪽 흐림 — 이미지가 더 이어지는 '미리보기'라는 느낌 */
+.dpcard::after{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.55) 45%,rgba(255,255,255,.96));pointer-events:none}
+.dpcard .dpview{z-index:2}
+@media(hover:none){.dpcard .dpview{opacity:.92;transform:translate(-50%,0);font-size:12px;padding:6px 14px;bottom:12px}}
+/* 더보기 / 접기 */
+.moregroup .more{display:none}
+.moregroup.open .more{display:block}
+.moregroup.open .tile.more{display:flex}
+.morewrap{text-align:center;margin-top:36px}
+.morebtn{font:inherit;font-size:15px;font-weight:600;color:var(--accent-deep);background:#fff;border:1px solid var(--accent);border-radius:999px;padding:12px 34px;cursor:pointer;transition:.2s}
+.morebtn span{font-weight:400;opacity:.75;margin-left:4px}
+.morebtn:hover{background:var(--accent);color:#fff}
+/* 상세페이지 팝업 */
+.dpop{position:fixed;inset:0;z-index:110;background:rgba(8,24,22,.94);display:none}
+.dpop.on{display:block}
+.dpop-scroll{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;cursor:zoom-out;padding:40px 16px}
+.dpop-body{max-width:860px;margin:0 auto;background:#fff;cursor:default;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.dpop-body img{display:block;width:100%;height:auto}
+.dpop-x{position:fixed;top:18px;right:22px;z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:22px;cursor:pointer}
+.dpop-x:hover{background:rgba(255,255,255,.3)}
+.dpop-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:2;width:54px;height:54px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:34px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;transition:.2s}
+.dpop-nav:hover{background:rgba(255,255,255,.3)}
+.dpop-nav.prev{left:22px}.dpop-nav.next{right:22px}
+@media(max-width:900px){.dpgrid{grid-template-columns:repeat(3,1fr);gap:22px}}
+@media(max-width:560px){.dpgrid{grid-template-columns:repeat(2,1fr);gap:14px}.dpop-scroll{padding:56px 0 0}.dpop-x{top:8px;right:10px}.dpop-nav{width:40px;height:40px;font-size:26px;background:rgba(16,48,46,.55)}.dpop-nav.prev{left:6px}.dpop-nav.next{right:6px}}
