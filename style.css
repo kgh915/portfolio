@@ -372,7 +372,7 @@ img{display:block;max-width:100%}
 .dpcard::before{content:"";position:absolute;inset:0;background:#000;opacity:0;transition:opacity .25s;z-index:1;pointer-events:none}
 .dpcard[data-pages]:hover::before{opacity:.35}
 /* 아래쪽 흐림 — 이미지가 더 이어지는 '미리보기'라는 느낌 */
-.dpcard::after{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.55) 45%,rgba(255,255,255,.96));pointer-events:none}
+.dpcard::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.55) 45%,rgba(255,255,255,.96));pointer-events:none}
 .dpcard .dpview{z-index:2}
 @media(hover:none){.dpcard .dpview{opacity:.92;transform:translate(-50%,0);font-size:12px;padding:6px 14px;bottom:12px}}
 /* 더보기 / 접기 */
