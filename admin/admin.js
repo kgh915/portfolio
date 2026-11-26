@@ -59,6 +59,54 @@
       h("button", { class: "mini del", title: "삭제", onclick: () => { if (confirm("이 항목을 목록에서 뺄까요? (저장 전까지는 되돌릴 수 있어요)")) { arr.splice(i, 1); changed(); rerender(); } } }, "삭제"),
     ];
   }
+  // ── 끌어서 옮기기 ───────────────────────────────────
+  // el: 옮길 줄(카드/칩), handle: 잡는 곳. 같은 목록 안에서만 옮겨짐.
+  let DRAG = null;
+  function moveItem(arr, from, to, rerender) {
+    if (from === to || to < 0 || to >= arr.length) return;
+    const [x] = arr.splice(from, 1); arr.splice(to, 0, x); changed(); rerender();
+  }
+  function clearMarks() { document.querySelectorAll(".drop-before,.drop-after").forEach(x => x.classList.remove("drop-before", "drop-after")); }
+  function dragSort(el, arr, i, rerender, handle, horizontal) {
+    handle.addEventListener("mousedown", () => { el.draggable = true; });
+    handle.addEventListener("mouseup", () => { el.draggable = false; });
+    el.addEventListener("dragstart", e => {
+      if (!el.draggable) return;
+      e.stopPropagation(); DRAG = { arr, i };
+      e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i + 1));
+      requestAnimationFrame(() => el.classList.add("dragging"));
+    });
+    el.addEventListener("dragend", () => { el.draggable = false; el.classList.remove("dragging"); clearMarks(); DRAG = null; });
+    const after = e => { const r = el.getBoundingClientRect(); return horizontal ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2; };
+    el.addEventListener("dragover", e => {
+      if (!DRAG || DRAG.arr !== arr) return;
+      e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "move";
+      const a = after(e); clearMarks(); if (DRAG.i !== i) el.classList.add(a ? "drop-after" : "drop-before");
+    });
+    el.addEventListener("drop", e => {
+      if (!DRAG || DRAG.arr !== arr) return;
+      e.preventDefault(); e.stopPropagation();
+      const from = DRAG.i; let to = i + (after(e) ? 1 : 0); if (from < to) to--;
+      clearMarks(); DRAG = null; moveItem(arr, from, to, rerender);
+    });
+  }
+  // 끄는 중 화면 위/아래 끝에 가면 자동으로 스크롤
+  addEventListener("dragover", e => {
+    if (!DRAG) return;
+    const edge = 80, y = e.clientY;
+    if (y < edge) scrollBy(0, -Math.ceil((edge - y) / 3)); else if (y > innerHeight - edge) scrollBy(0, Math.ceil((y - innerHeight + edge) / 3));
+  });
+  // 번호 배지를 누르면 원하는 번호로 바로 이동
+  function numBadge(arr, i, rerender, cls = "num") {
+    return h("button", { class: cls + " jump", type: "button", title: "눌러서 원하는 번호로 옮기기", onclick: () => {
+      const v = prompt(`몇 번째로 옮길까요? (1 ~ ${arr.length})`, String(i + 1));
+      if (v === null) return; const n = parseInt(v, 10);
+      if (!(n >= 1 && n <= arr.length)) { alert(`1부터 ${arr.length} 사이 숫자를 넣어 주세요.`); return; }
+      moveItem(arr, i, n - 1, rerender);
+    } }, i + 1);
+  }
+  const grip = () => h("span", { class: "grip", title: "잡고 끌어서 옮기기" }, "⠿");
+
   // 문자열 목록(배지·툴·문단 등)
   function strList(label, obj, key, o = {}) {
     const box = h("div", { class: "field" }, h("label", {}, label));
@@ -69,7 +117,8 @@
       arr.forEach((v, i) => {
         const inp = o.textarea ? h("textarea", { rows: 3 }) : h("input", { type: "text" }); inp.value = v;
         inp.addEventListener("input", () => { arr[i] = inp.value; changed(); });
-        list.append(h("div", { class: "str" }, inp, ...moveBtns(arr, i, render)));
+        const g = grip(), row = h("div", { class: "str" }, g, inp, ...moveBtns(arr, i, render));
+        dragSort(row, arr, i, render, g); list.append(row);
       });
       list.append(h("button", { class: "mini add", onclick: () => { arr.push(""); changed(); render(); } }, "+ 추가"));
     };
@@ -101,28 +150,35 @@
         const body = h("div", { class: "item-body" });
         const card = h("div", { class: "item closed" });
         const t = o.thumb ? o.thumb(item) : "";
-        const head = h("div", { class: "item-head" },
-          h("span", { class: "num" }, i + 1), t ? h("img", { class: "thumb", src: t, alt: "", loading: "lazy" }) : null,
+        const g = o.fixed ? null : grip();
+        const head = h("div", { class: "item-head" }, g,
+          o.fixed ? h("span", { class: "num" }, i + 1) : numBadge(arr, i, render), t ? h("img", { class: "thumb", src: t, alt: "", loading: "lazy", draggable: "false" }) : null,
           h("span", { class: "ttl" }, o.title(item, i) || "(제목 없음)"),
           h("button", { class: "mini", onclick: () => card.classList.toggle("closed") }, "열기/닫기"),
           ...(o.fixed ? [] : moveBtns(arr, i, render)));
         o.render(item, body, i);
         card.append(head, body); wrap.append(card);
+        if (g) dragSort(card, arr, i, render, g);
       });
       if (o.add) wrap.append(h("button", { class: "mini add", onclick: () => { arr.push(o.add()); changed(); render(); wrap.lastElementChild.previousElementSibling?.classList.remove("closed"); } }, "+ 항목 추가"));
     };
-    render(); return wrap;
+    render();
+    return o.fixed ? wrap : h("div", {}, h("div", { class: "note movehelp" }, "순서 바꾸기: 왼쪽 ⠿를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 바로 옮겨져요."), wrap);
   }
   // 이미지 순서(썸네일 칩) — 파일 이름 목록의 순서 변경·빼기
   function chips(label, arr, note) {
-    const box = h("div", { class: "field" }, h("label", {}, label), note ? h("div", { class: "note" }, note) : null);
+    const box = h("div", { class: "field" }, h("label", {}, label), note ? h("div", { class: "note" }, note) : null,
+      h("div", { class: "note" }, "순서 바꾸기: 이미지를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 돼요."));
     const list = h("div", { class: "chips" }); box.append(list);
     const render = () => {
       list.innerHTML = "";
-      arr.forEach((name, i) => list.append(h("div", { class: "chip" },
-        h("img", { src: img(typeof name === "string" ? name : name.thumb), alt: "", loading: "lazy" }),
-        h("span", { class: "id" }, (i + 1) + ". " + (typeof name === "string" ? name : name.full)),
-        h("div", { class: "btns" }, ...moveBtns(arr, i, render)))));
+      arr.forEach((name, i) => {
+        const pic = h("img", { src: img(typeof name === "string" ? name : name.thumb), alt: "", loading: "lazy", draggable: "false", title: "잡고 끌어서 옮기기" });
+        const chip = h("div", { class: "chip" }, pic,
+          h("span", { class: "id" }, numBadge(arr, i, render, "cnum"), " ", (typeof name === "string" ? name : name.full)),
+          h("div", { class: "btns" }, ...moveBtns(arr, i, render)));
+        dragSort(chip, arr, i, render, pic, true); list.append(chip);
+      });
     };
     render(); return box;
   }

@@ -73,6 +73,18 @@ input,textarea,select{font:inherit;color:inherit}
 .chip .btns{display:flex;gap:3px}
 .color{display:flex;align-items:center;gap:6px}
 .color input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:6px;padding:0;background:#fff}
+/* 끌어서 옮기기 */
+.grip{cursor:grab;color:#9AB0AC;font-size:18px;line-height:1;padding:2px 4px;user-select:none;border-radius:5px}
+.grip:hover{color:var(--accent-deep);background:var(--mint)}
+.chip img{cursor:grab}
+.dragging{opacity:.35}
+.item.drop-before,.str.drop-before{box-shadow:0 -3px 0 0 var(--accent)}
+.item.drop-after,.str.drop-after{box-shadow:0 3px 0 0 var(--accent)}
+.chip.drop-before{box-shadow:-3px 0 0 0 var(--accent)}
+.chip.drop-after{box-shadow:3px 0 0 0 var(--accent)}
+.jump{border:0;cursor:pointer}
+.jump:hover{background:var(--accent);color:#fff}
+.cnum{font-size:11px;font-weight:700;color:var(--accent-deep);background:var(--mint);border-radius:5px;padding:0 5px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:12px 18px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:50}
 
 @media(max-width:760px){
@@ -81,3 +93,4 @@ input,textarea,select{font:inherit;color:inherit}
   .tabs button{white-space:nowrap}
   .panel{padding:18px 16px 80px}
 }
+.movehelp{font-size:12px;color:var(--soft);margin:0 0 8px}
