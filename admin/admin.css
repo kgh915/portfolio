@@ -1,0 +1,83 @@
+/* 포트폴리오 관리자 화면 — 사이트와 같은 민트 톤, 글자 위주의 단순한 화면 */
+:root{--ink:#17302E;--soft:#4F635F;--line:rgba(23,48,46,.12);--bg:#F4F8F7;--card:#fff;--accent:#1BB7AC;--accent-deep:#159489;--mint:#E7F6F4;--warn:#C2410C}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55;word-break:keep-all}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+
+/* 로그인 */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-box{width:100%;max-width:360px;background:var(--card);border-radius:16px;padding:36px 30px;box-shadow:0 20px 50px -24px rgba(23,48,46,.35);display:grid;gap:12px}
+.login-box h1{font-size:20px}
+.login-box p{color:var(--soft)}
+.login-box input{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.login-box button{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:12px;font-weight:700}
+.msg{min-height:20px;color:var(--warn);font-size:13px}
+
+/* 상단 */
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{font-weight:800;font-size:16px}
+.branch{font-weight:600;font-size:12px;color:var(--accent-deep);background:var(--mint);border-radius:6px;padding:2px 8px;margin-left:6px}
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.status{font-size:13px;color:var(--soft)}
+.status.warn{color:var(--warn)}
+.primary{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:9px 18px;font-weight:700}
+.primary:disabled{background:#B9D9D5;cursor:default}
+.ghost{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 14px;color:var(--ink);text-decoration:none;font-size:13px}
+
+/* 본문: 왼쪽 메뉴 + 편집 영역 */
+.body{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 58px)}
+.tabs{border-right:1px solid var(--line);background:#fff;padding:12px 8px;display:flex;flex-direction:column;gap:2px;position:sticky;top:58px;align-self:start;max-height:calc(100vh - 58px);overflow:auto}
+.tabs button{text-align:left;background:none;border:0;border-radius:8px;padding:9px 12px;color:var(--soft)}
+.tabs button.on{background:var(--mint);color:var(--accent-deep);font-weight:700}
+.tabs button .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn);margin-left:6px;vertical-align:middle}
+.panel{padding:24px 28px 80px;max-width:980px}
+.panel h2{font-size:20px;margin-bottom:4px}
+.panel .help{color:var(--soft);margin-bottom:18px}
+
+/* 입력 칸 */
+.group{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.group>h3{font-size:15px;margin-bottom:12px}
+.field{display:grid;gap:5px;margin-bottom:12px}
+.field>label{font-size:12px;font-weight:700;color:var(--accent-deep)}
+.field .note{font-size:12px;color:var(--soft)}
+.field input[type=text],.field input[type=number],.field input[type=url],.field textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#fff}
+.field textarea{min-height:70px;resize:vertical}
+.field input:focus,.field textarea:focus{outline:2px solid rgba(27,183,172,.35);border-color:var(--accent)}
+.field.changed input,.field.changed textarea{background:#FFFBEA}
+
+/* 목록(순서 변경) */
+.items{display:grid;gap:10px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.item-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.item-head .num{font-size:12px;font-weight:700;color:var(--accent-deep);background:var(--mint);border-radius:6px;padding:2px 8px}
+.item-head .ttl{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-head .thumb,.chip img{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line);background:#fafafa}
+.item.closed .item-body{display:none}
+.mini{background:#fff;border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--soft)}
+.mini:hover{border-color:var(--accent);color:var(--accent-deep)}
+.mini.del:hover{border-color:var(--warn);color:var(--warn)}
+.add{margin-top:6px}
+
+/* 문자열 목록(배지·툴 등) */
+.strs{display:grid;gap:6px}
+.str{display:flex;gap:6px;align-items:center}
+.str input,.str textarea{flex:1}
+
+/* 이미지 순서(썸네일 칩) */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;width:96px}
+.chip img{width:82px;height:82px}
+.chip .id{font-size:11px;color:var(--soft)}
+.chip .btns{display:flex;gap:3px}
+.color{display:flex;align-items:center;gap:6px}
+.color input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:6px;padding:0;background:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:12px 18px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:50}
+
+@media(max-width:760px){
+  .body{grid-template-columns:1fr}
+  .tabs{flex-direction:row;overflow-x:auto;position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}
+  .tabs button{white-space:nowrap}
+  .panel{padding:18px 16px 80px}
+}

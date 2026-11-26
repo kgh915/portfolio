@@ -766,6 +766,12 @@ addEventListener('keydown',e=>{{if(!lb.classList.contains('on'))return;if(e.key=
 
 with open(os.path.join(OUT,"index.html"),"w",encoding="utf-8") as f:
     f.write(html)
+
+# 관리자 화면용 이미지 목록(admin/manifest.json) — 관리자 화면이 미리보기 썸네일 경로를 찾을 때 사용(자동 생성, 깃 제외)
+if os.path.isdir(os.path.join(OUT,"admin")):
+    files=sorted(f for f in os.listdir(os.path.join(OUT,"assets")) if not f.startswith(".") and os.path.isfile(os.path.join(OUT,"assets",f)))
+    with open(os.path.join(OUT,"admin","manifest.json"),"w",encoding="utf-8") as f:
+        json.dump({"assets":files},f,ensure_ascii=False)
 print("built single-page index.html")
 
 # ── 배포용 폴더(dist) 만들기 ───────────────────────────────────────────

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>포트폴리오 관리자</title>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<!-- 로그인 -->
+<section id="login" class="login" hidden>
+  <form class="login-box" id="loginForm">
+    <h1>포트폴리오 관리자</h1>
+    <p>비밀번호를 입력해 주세요.</p>
+    <input type="password" id="pw" autocomplete="current-password" placeholder="비밀번호" required>
+    <button type="submit">로그인</button>
+    <div class="msg" id="loginMsg"></div>
+  </form>
+</section>
+
+<!-- 관리자 화면 -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="brand">포트폴리오 관리자 <span class="branch" id="branch"></span></div>
+    <div class="actions">
+      <span class="status" id="status"></span>
+      <a class="ghost" href="../" target="_blank" rel="noopener">사이트 보기 ↗</a>
+      <button class="primary" id="saveBtn" disabled>저장</button>
+      <button class="ghost" id="logoutBtn">로그아웃</button>
+    </div>
+  </header>
+  <div class="body">
+    <nav class="tabs" id="tabs"></nav>
+    <main class="panel" id="panel"></main>
+  </div>
+</div>
+<script src="admin.js"></script>
+</body>
+</html>
