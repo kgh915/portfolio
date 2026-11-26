@@ -60,12 +60,13 @@ async function gh(pathname, opts = {}) {
       "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "portfolio-admin", ...(opts.headers || {}) },
   });
   if (!r.ok) { const t = await r.text(); throw new Error("GitHub " + r.status + ": " + t.slice(0, 200)); }
+  if (opts.raw) return r.text();  // 파일 내용 그대로(글자)로 받기
   return r.headers.get("content-type")?.includes("json") ? r.json() : r.text();
 }
 async function headSha() { return (await gh("/git/ref/heads/" + encodeURIComponent(BRANCH))).object.sha; }
 async function readFile(p, ref) {
   if (LOCAL) return fs.readFileSync(path.join(ROOT, p), "utf8");
-  return gh("/contents/" + p + "?ref=" + ref, { headers: { Accept: "application/vnd.github.raw+json" } });
+  return gh("/contents/" + p + "?ref=" + ref, { raw: true, headers: { Accept: "application/vnd.github.raw+json" } });
 }
 // files: [{path, content (utf8 text) | base64}] 를 한 번의 커밋으로 저장
 async function commitFiles(files, message, expectSha) {
