@@ -1,4 +1,4 @@
-# 진행 상황 (이어서 작업용) — 최종 업데이트 2026-11-26 밤
+# 진행 상황 (이어서 작업용) — 최종 업데이트 2026-11-27
 
 > 의뢰인이 **"이어서 작업하자"**라고만 하면, 이 파일만 읽고 아래 **0절 → 3절 순서**로 바로 이어갈 것. 처음부터 다시 검토하지 말 것.
 > 사이트: https://kimgeunha.vercel.app (GitHub kgh915/portfolio, main 푸시 → Vercel 자동 배포). 세부 배경은 `PROJECT_CONTEXT.md` 7절.
@@ -7,7 +7,7 @@
 1. `cd /Users/kgh/실습/portfolio_v2 && git switch admin-mode && git pull --ff-only origin admin-mode`
    - **의뢰인이 관리자 화면에서 저장하면 GitHub admin-mode 브랜치에 커밋이 생김** → 반드시 먼저 pull.
 2. 의뢰인이 세션 사이에 관리자 화면으로 바꾼 내용 확인:
-   `git log --oneline 694b51d..HEAD` (694b51d = 2026-11-26 마지막 세션 끝 기준)
+   `git log --oneline 3bdf262..HEAD` (3bdf262 = 2026-11-27 세션 끝 기준)
    → "관리자 화면에서 내용 수정: …" 커밋이 있으면 `git diff 694b51d HEAD -- data/ assets/detail/details.json`로 무엇이 바뀌었는지 쉬운 말로 요약해 보여주고, **유지할지 되돌릴지 물어볼 것**
    (의뢰인이 순서 변경·삭제를 시험해 보기로 함. 시험용 변경이 실제 사이트에 합쳐지지 않게 확인 필요)
 3. 의뢰인에게 "어디까지 끝났고 이번에 무엇을 할지" 한두 줄로 알린 뒤 3-5 시작.
@@ -27,6 +27,7 @@
 | 3-2 | 히어로·프로필·섹션 소개/배지/안내·About·푸터·연락처 → `site.json`의 `texts` |
 | 3-3 | `vercel.json`: 빌드 `python3 build.py --dist`, 공개 폴더 `dist`(index·style·favicon·assets·admin만 → 내부 문서 비공개) |
 | 3-4 | 관리자 화면 `admin/`(index.html·admin.js·admin.css, 한글 메뉴 12개: 기본정보·섹션소개·인터뷰·제품·프로젝트·AI·상세페이지·패키지·편집·사진·경력·About) + API `api/`(login·content·save). 글자 수정·▲▼ 순서·삭제·인터뷰/경력/기여도 추가·컬러 선택·저장. 저장 = 두 데이터 파일 한 커밋으로 GitHub(배포된 브랜치)에 → Vercel 자동 재빌드. **의뢰인이 미리보기에서 로그인·저장 성공 확인** |
+| 3-4+ (11-27) | 끌어서 순서 옮기기(⠿ 손잡이·이미지), 번호 배지 눌러 원하는 번호로 이동, **숨기기/보이기**(목록 항목 `hidden:true`, 이미지 이름은 `site.json`의 `hidden_images` → build.py `vis()`가 사이트에서 뺌). 의뢰인 시험 완료("완벽해"). 골드바 상패 1번 순서는 의뢰인 의도 → 유지 |
 
 - 로컬 시험: `node tools/admin-dev.js` → http://localhost:8130/admin/ (비번 `local-test`, launch.json `admin-dev`). 로컬 저장은 폴더 파일을 직접 바꾸므로 시험 후 `git checkout data/ assets/detail/details.json`
 - 비밀값 안내 문서: `docs/admin/관리자_비밀값_설정방법.md`
