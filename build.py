@@ -38,14 +38,19 @@ SITE=json.load(open(os.path.join(OUT,"data","site.json"),encoding="utf-8"))
 DETAIL_INITIAL=SITE["settings"]["detail_initial"]  # 처음에 보일 상세페이지 미리보기 개수(나머지는 「더보기」)
 PHOTO_INITIAL=SITE["settings"]["photo_initial"]    # 사진 촬영 섹션 처음에 보일 개수
 detail_desc=SITE["detail_desc"]
-package=SITE["package"]      # 패키지 코너 순서(3D 목업 영상 pk01-1 등은 숨김 — 파일만 남아 있음)
-editorial=SITE["editorial"]
-photo=SITE["photo"]          # 사진 촬영 순서(ph01~)
-products=SITE["products"]    # 기획·출시 제품
+# 숨긴 항목(관리자 화면 '숨기기')은 사이트에 안 나옴 — 데이터는 그대로 남아 언제든 다시 보이게 할 수 있음
+# 목록 항목: {"hidden": true} / 이미지 이름 목록(패키지·편집·사진): site.json의 hidden_images에 이름이 있으면 숨김
+HIDDEN_IMAGES=set(SITE.get("hidden_images") or [])
+def vis(xs): return [x for x in xs if not (isinstance(x,dict) and x.get("hidden")) and not (isinstance(x,str) and x in HIDDEN_IMAGES)]
+details=vis(details)
+package=vis(SITE["package"])      # 패키지 코너 순서(3D 목업 영상 pk01-1 등은 숨김 — 파일만 남아 있음)
+editorial=vis(SITE["editorial"])
+photo=vis(SITE["photo"])          # 사진 촬영 순서(ph01~)
+products=vis(SITE["products"])    # 기획·출시 제품
 project=SITE["project"]      # 셀프 디자인 프로젝트
-career=[(c["period"],c["company"],c["role"],c["desc"]) for c in SITE["career"]]
-ai_works=SITE["ai_works"]    # AI 활용 작업물(영상 + 콘셉트 이미지)
-interview=[(x["q"],x["a"]) for x in SITE["interview"]]  # 인터뷰 Q&A(질문이 null이면 마무리 인사)
+career=[(c["period"],c["company"],c["role"],c["desc"]) for c in vis(SITE["career"])]
+ai_works=[dict(w,concepts=vis(w.get("concepts") or [])) for w in vis(SITE["ai_works"])]    # AI 활용 작업물(영상 + 콘셉트 이미지)
+interview=[(x["q"],x["a"]) for x in vis(SITE["interview"])]  # 인터뷰 Q&A(질문이 null이면 마무리 인사)
 
 def masonry(ids):
     return '<div class="masonry">'+''.join(f'<div class="ph" data-full="assets/{i}.jpg"><img src="assets/{i}.jpg" loading="lazy" alt=""></div>' for i in ids)+'</div>'

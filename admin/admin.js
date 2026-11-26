@@ -56,7 +56,7 @@
     return [
       h("button", { class: "mini", title: "위로", onclick: () => { if (i > 0) { [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]; changed(); rerender(); } } }, "▲"),
       h("button", { class: "mini", title: "아래로", onclick: () => { if (i < arr.length - 1) { [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]]; changed(); rerender(); } } }, "▼"),
-      h("button", { class: "mini del", title: "삭제", onclick: () => { if (confirm("이 항목을 목록에서 뺄까요? (저장 전까지는 되돌릴 수 있어요)")) { arr.splice(i, 1); changed(); rerender(); } } }, "삭제"),
+      h("button", { class: "mini del", title: "완전히 삭제", onclick: () => { if (confirm("이 항목을 완전히 삭제할까요?\n잠시 안 보이게만 하려면 '숨기기'를 쓰세요. (저장 전까지는 되돌릴 수 있어요)")) { if (typeof arr[i] === "string" && S.hidden_images) setHidden(arr, i, false); arr.splice(i, 1); changed(); rerender(); } } }, "삭제"),
     ];
   }
   // ── 끌어서 옮기기 ───────────────────────────────────
@@ -107,6 +107,23 @@
   }
   const grip = () => h("span", { class: "grip", title: "잡고 끌어서 옮기기" }, "⠿");
 
+  // ── 숨기기 ─────────────────────────────────────────
+  // 목록 항목은 hidden:true, 이미지 이름(문자열)은 S.hidden_images에 이름을 넣어 숨김. 데이터는 지우지 않음.
+  const isHidden = x => typeof x === "string" ? (S.hidden_images || []).includes(x) : !!(x && x.hidden);
+  function setHidden(arr, i, on) {
+    const x = arr[i];
+    if (typeof x === "string") {
+      const l = S.hidden_images || (S.hidden_images = []);
+      const k = l.indexOf(x); if (on && k < 0) l.push(x); if (!on && k >= 0) l.splice(k, 1);
+      if (!l.length) delete S.hidden_images;
+    } else if (on) x.hidden = true; else delete x.hidden;
+  }
+  function hideBtn(arr, i, rerender) {
+    const on = isHidden(arr[i]);
+    return h("button", { class: "mini hide" + (on ? " on" : ""), type: "button", title: on ? "다시 사이트에 보이게 하기" : "사이트에서만 안 보이게 하기(자료는 남아 있음)",
+      onclick: () => { setHidden(arr, i, !on); changed(); rerender(); } }, on ? "보이기" : "숨기기");
+  }
+
   // 문자열 목록(배지·툴·문단 등)
   function strList(label, obj, key, o = {}) {
     const box = h("div", { class: "field" }, h("label", {}, label));
@@ -148,13 +165,15 @@
       wrap.innerHTML = "";
       arr.forEach((item, i) => {
         const body = h("div", { class: "item-body" });
-        const card = h("div", { class: "item closed" });
+        const hid = o.hide !== false && isHidden(item);
+        const card = h("div", { class: "item closed" + (hid ? " is-hidden" : "") });
         const t = o.thumb ? o.thumb(item) : "";
         const g = o.fixed ? null : grip();
         const head = h("div", { class: "item-head" }, g,
           o.fixed ? h("span", { class: "num" }, i + 1) : numBadge(arr, i, render), t ? h("img", { class: "thumb", src: t, alt: "", loading: "lazy", draggable: "false" }) : null,
-          h("span", { class: "ttl" }, o.title(item, i) || "(제목 없음)"),
+          h("span", { class: "ttl" }, hid ? h("span", { class: "hidtag" }, "숨김") : null, o.title(item, i) || "(제목 없음)"),
           h("button", { class: "mini", onclick: () => card.classList.toggle("closed") }, "열기/닫기"),
+          o.hide === false ? null : hideBtn(arr, i, render),
           ...(o.fixed ? [] : moveBtns(arr, i, render)));
         o.render(item, body, i);
         card.append(head, body); wrap.append(card);
@@ -163,20 +182,20 @@
       if (o.add) wrap.append(h("button", { class: "mini add", onclick: () => { arr.push(o.add()); changed(); render(); wrap.lastElementChild.previousElementSibling?.classList.remove("closed"); } }, "+ 항목 추가"));
     };
     render();
-    return o.fixed ? wrap : h("div", {}, h("div", { class: "note movehelp" }, "순서 바꾸기: 왼쪽 ⠿를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 바로 옮겨져요."), wrap);
+    return o.fixed ? wrap : h("div", {}, h("div", { class: "note movehelp" }, "순서 바꾸기: 왼쪽 ⠿를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 바로 옮겨져요. '숨기기'는 사이트에서만 안 보이게 하고 자료는 남겨 둬요(다시 '보이기' 가능). '삭제'는 완전히 필요 없을 때만 쓰세요."), wrap);
   }
   // 이미지 순서(썸네일 칩) — 파일 이름 목록의 순서 변경·빼기
   function chips(label, arr, note) {
     const box = h("div", { class: "field" }, h("label", {}, label), note ? h("div", { class: "note" }, note) : null,
-      h("div", { class: "note" }, "순서 바꾸기: 이미지를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 돼요."));
+      h("div", { class: "note" }, "순서 바꾸기: 이미지를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 돼요. '숨기기'는 사이트에서만 안 보이게 하고, '삭제'는 완전히 필요 없을 때만 쓰세요."));
     const list = h("div", { class: "chips" }); box.append(list);
     const render = () => {
       list.innerHTML = "";
       arr.forEach((name, i) => {
         const pic = h("img", { src: img(typeof name === "string" ? name : name.thumb), alt: "", loading: "lazy", draggable: "false", title: "잡고 끌어서 옮기기" });
-        const chip = h("div", { class: "chip" }, pic,
+        const chip = h("div", { class: "chip" + (isHidden(name) ? " is-hidden" : "") }, pic, isHidden(name) ? h("span", { class: "hidtag" }, "숨김") : null,
           h("span", { class: "id" }, numBadge(arr, i, render, "cnum"), " ", (typeof name === "string" ? name : name.full)),
-          h("div", { class: "btns" }, ...moveBtns(arr, i, render)));
+          h("div", { class: "btns" }, ...moveBtns(arr, i, render)), hideBtn(arr, i, render));
         dragSort(chip, arr, i, render, pic, true); list.append(chip);
       });
     };
@@ -238,7 +257,7 @@
           if (!x.pages?.length) return;
           const cs = x.contrib || (x.contrib = []);
           b.append(h("div", { class: "field" }, h("label", {}, "기여도"), h("div", { class: "note" }, "100%인 역할은 사이트에서 '기획·디자인 100%'처럼 자동으로 합쳐져요. %가 아닌 경우(업체제공 등)는 % 칸을 비우고 표시 문구를 쓰세요."),
-            objList(cs, { title: c => c.role + " " + (c.pct != null ? c.pct + "%" : "- " + (c.text || "")), add: () => ({ role: "", pct: 100 }),
+            objList(cs, { title: c => c.role + " " + (c.pct != null ? c.pct + "%" : "- " + (c.text || "")), add: () => ({ role: "", pct: 100 }), hide: false,
               render: (c, bb) => bb.append(field("역할", c, "role"), field("%", c, "pct", { type: "number", min: 0, max: 100 }), field("표시 문구(% 대신)", c, "text")) })));
           b.append(strList("사용툴", x, "tools"), colorList("컬러무드", x, "colors"), field("기획 컨셉", x, "concept", { type: "textarea", rows: 4, note: "PC에서 2~3줄이 적당해요." }));
         } }),
