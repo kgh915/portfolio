@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 import os,json,html
 OUT=os.path.dirname(os.path.abspath(__file__))
-# style.css 캐시 버스팅용 — 빌드할 때마다 파일 수정시각을 쿼리스트링으로 붙여서, CSS만 바꾸고 재빌드해도
-# 브라우저가 예전 캐시된 CSS를 계속 쓰는 문제(여러 번 반복됐던 버그)를 원천적으로 막는다.
-CSS_VER=int(os.path.getmtime(os.path.join(OUT,"style.css"))) if os.path.exists(os.path.join(OUT,"style.css")) else 0
-FAVICON_VER=int(os.path.getmtime(os.path.join(OUT,"favicon.svg"))) if os.path.exists(os.path.join(OUT,"favicon.svg")) else 0
-
-# 이미지/영상 캐시 버스팅용 — style.css와 같은 이유. 같은 파일명으로 사진·영상만 교체했을 때
-# 브라우저가 예전 캐시를 계속 보여주는 문제(선크림·음료수 커버 이미지 교체 때 실제로 발생)를 막는다.
+# 캐시 버스팅 — 파일 '내용'으로 만든 짧은 지문을 ?v= 로 붙임. 같은 파일명으로 이미지·CSS를 바꿔도
+# 브라우저가 예전 캐시를 보여주지 않음. (예전엔 수정 시각을 썼는데, 서버(Vercel)에서 빌드하면 매번 시각이 바뀌어
+# 캐시가 매번 깨지므로 내용 기준으로 바꿈 — 맥에서 빌드하든 서버에서 빌드하든 결과가 같음)
+import hashlib
+_ver_cache={}
+def file_ver(full):
+    if not os.path.exists(full): return "0"
+    if full not in _ver_cache:
+        h=hashlib.md5()
+        with open(full,"rb") as f:
+            for chunk in iter(lambda:f.read(1<<20),b""): h.update(chunk)
+        _ver_cache[full]=h.hexdigest()[:10]
+    return _ver_cache[full]
+CSS_VER=file_ver(os.path.join(OUT,"style.css"))
+FAVICON_VER=file_ver(os.path.join(OUT,"favicon.svg"))
 def av(path):
-    full=os.path.join(OUT,"assets",path)
-    v=int(os.path.getmtime(full)) if os.path.exists(full) else 0
-    return f"assets/{path}?v={v}"
+    return f"assets/{path}?v={file_ver(os.path.join(OUT,'assets',path))}"
 
 # 폴더에서 prefix+번호(ph01, ph02 …) 파일을 연속으로 자동 수집 (jpg/png/mp4)
 def autoseq(prefix):
@@ -26,142 +32,20 @@ detail_imgs=["ds01"]  # 맨 위 태블릿·폰 목업만 유지 (ds02~05 4열 �
 # 상세페이지 미리보기 목록 — assets/detail/details.json 순서대로 표시.
 # pages가 비어 있으면(상세페이지 원본 없음) 미리보기만 보이고 클릭해도 반응 없음 → 목록 뒤쪽에 둘 것.
 details=json.load(open(os.path.join(OUT,"assets","detail","details.json"),encoding="utf-8"))
-DETAIL_INITIAL=20  # 처음에 보일 미리보기 개수 (나머지는 「더보기」)
-PHOTO_INITIAL=20   # 사진 촬영 섹션 처음에 보일 개수
-detail_desc="PC와 모바일 어디서나 가독성과 설득력을 잃지 않는 상세페이지입니다. 제품의 핵심 가치를 한눈에 전달하고, 감각적이고 트렌디한 비주얼로 구매 전환까지 이끄는 것을 목표로 작업했습니다. 공기청정기·건강기능·뷰티·생활용품 등 다양한 카테고리의 상세페이지를 기획부터 디자인, 제품 촬영까지 직접 진행했습니다."
-
-package=["pk01","pk02","pk04","pk05","pk03","pk06","pk07"]  # 3D 목업 영상(pk01-1·pk02-1·pk04-1·pk05-1)은 의뢰인 요청으로 숨김(파일은 assets에 남겨둠). pk06 바디프라임 비강확장기, pk07 시하미나 단상자 도면
-editorial=["ed01","ed02","ed03","ed04","ed05","ed06","ed07","ed08"]
-photo=autoseq("ph")  # assets 폴더의 ph01,ph02… 를 자동 인식 (파일만 넣으면 추가됨)
-
-# (구) 05 상품기획 섹션은 폐지됨 — 도깨비 소원카드는 "직접 기획한 출시 제품" 그리드로 이동(판매 종료 표시),
-# 크리스탈 이벤트 상품은 그 그리드에 이미 있는 스모크크리스탈 상패와 겹쳐서 삭제함. products=[...] 리스트 참고.
-
-# 실제 출시·판매된 제품 — 청송기획 재직 중 기획에 참여해 실제로 자사몰에서 판매 중인 제품 5종.
-# 링크를 인터뷰 위젯 등에 직접 넣기보다, 사진은 이 사이트 안에서 깔끔하게 보여주고 "실제 제품 보러가기"
-# 링크는 보조 증빙용으로만 작게 붙이는 방식(의뢰인 확정 방향).
-products=[
- dict(img="prod01",title="골드바 감사패",achieve="출시 후 매출 TOP3",
-   concept="왕관 모양 프레임으로 얇은 골드바에 입체감과 고급스러움을 더했습니다.",
-   url="https://csgold.co.kr/product/detail.html?product_no=3252&cate_no=109&display_group=1"),
- dict(img="prod02",title="순금 돌반지 기념 액자",achieve="자사몰 돌선물 판매 1위",
-   concept="투명 필름 인쇄로 돌 특유의 맑은 느낌을 살리고 제작 방식도 간소화했습니다.",
-   url="https://csgold.co.kr/product/detail.html?product_no=3747&cate_no=48&display_group=1"),
- dict(img="prod03",title="우드 스탠드 감사패",achieve="입체적 디자인 개발",
-   concept="아크릴에 배경을 인쇄하고 크기가 다른 패널을 겹쳐 입체감을 살렸습니다.",
-   url="https://csgold.co.kr/product/detail.html?product_no=2999&cate_no=146&display_group=1"),
- dict(img="prod05",title="스모크 크리스탈 상패",achieve="명함 상패 매출 1위",
-   concept="명함과 인쇄를 결합한 레이아웃을 처음 시도한 제품입니다.",
-   url="https://csgold.co.kr/product/detail.html?product_no=28&cate_no=155&display_group=1"),
- dict(img="prod06",title="컬러 미니 크리스탈 상패",achieve="이벤트 첫날 100개+ 판매",
-   concept="빠른 출고를 위해 기성 제품으로 디자인한 이벤트용 선물입니다.",
-   url="https://csgold.co.kr/product/detail.html?product_no=3343&cate_no=146&display_group=1"),
- dict(img="pj01",title="도깨비 소원카드",achieve="조기 마감 · 재문의 지속",
-   concept="드라마 '도깨비'에서 착안한 부적 스타일의 이벤트성 새해 선물입니다.",
-   url=None),
-]
-
-# 06 자사몰 고도화 — 플래그십(05와 동일 폼: 텍스트 + 아래 요약)
-project=dict(img="pj02",
-   title="설치 없이 웹에서 바로 편집하고 제작까지",
-   lead="회사 내 핵심 부서들과 소통해 기존 시스템의 문제점을 파악하고, 고객이 직접 편집할 수 있는 셀프 디자인 시스템 구축 프로젝트를 진행했습니다. 예상보다 2개월 앞당겨 완료하였고, 도입 이후 매출에도 30% 이상 기여하였다는 공식 보고서를 확인하였습니다.",
-   # 인터뷰(4️⃣-a/b/c)와 겹치더라도 이 카드만 봤을 때 너무 간략해 보인다는 피드백으로 진행 과정을 다시 보충함.
-   steps=["외주 개발사 선정·계약과 사내 팀(3인) 핸들링","도입 후 운영 안정화 관리로 오류 1% 미만 유지 및 매출 기여"],
-   roles="총괄 PM",
-   # 예전엔 (라벨,값,설명) 3단 카드였는데 "총괄 PM"류 단어가 role 배지와 겹치고 박스가 길어 보인다는
-   # 피드백으로, 카드 대신 짧은 배지 문장으로 압축함. 겹치던 "프로젝트 총괄"/"시스템 도입 후" 등 수식어는 제거.
-   # 역할 배지+사실 배지를 한 줄에 같이 나열하므로(roles도 badges에 합침) 너무 길어지지 않게 최소한만 남김.
-   stats=["2025.03–2025.09","매출 30%+ 기여"],
-   problem=["주문 → 고객 요청 → 시안 제작 → 메일 피드백 → 수정의 반복","긴 리드타임과 디자이너 개별 응대로 인한 인건비 부담 및 제작 지연 발생"],
-   solution=["주문 → 고객 셀프 디자인 → 제작 → 출고로 단순화","인건비 절감 및 응대로 인한 스트레스 감소와 제작 손실 방지","정확하고 빠른 진행으로 고객·직원 만족도 상승"])
-
-career=[("2002.02–2005.05","광선기공사","디자인 · 사원","홈페이지 제작·관리, 제품 촬영, 카탈로그 디자인"),
- ("2005.07–2010.09","프린센스 스튜디오","촬영·편집 · 실장","제품·웨딩·프로필 촬영, 리터칭 및 편집"),
- ("2012.02–2015.12","(주)가주 / 쿨맥스","웹·편집 · 대리","카드뉴스·홍보물 디자인, 제품 촬영, 블로그 관리"),
- ("2020.05–2021.04","이원의료기","웹·편집 · 과장","상세페이지 리뉴얼, 패키지·카탈로그, 이벤트 상품 기획"),
- ("2016.02–2019.04<br>2022.09–2026.04","(주)청송기획 / (주)주렁주렁 <span class='conote'>합산 6년 9개월 · 재입사</span>","기획·디자인 총괄 · 실장 → 과장","신제품 기획·개발, 비주얼 디자인 및 마케팅 총괄, 재입사 후 자사몰 고도화 프로젝트 총괄 PM")]
-
-
-# AI 활용 작업물 — 실제 판매 중인 제품 5종을 소재로, 브랜드와 무관하게 개인적으로 진행한 AI 이미지·영상 샘플 작업
-# 5종 모두 kind="video"(완성 영상 + 콘셉트 이미지 그리드) 구조로 통일됨(2026-09-18)
-ai_works=[
- dict(title="선크림",kind="video",still="ai01-still.jpg",src="ai01.mp4",
-   concepts=[dict(thumb="ai01-6-thumb.jpg",full="ai01-6.jpg"),
-     dict(thumb="ai01-1-thumb.jpg",full="ai01-1.jpg"),dict(thumb="ai01-7-thumb.jpg",full="ai01-7.jpg"),
-     dict(thumb="ai01-8-thumb.jpg",full="ai01-8.jpg"),dict(thumb="ai01-5-thumb.jpg",full="ai01-5.jpg"),
-     dict(thumb="ai01-3-thumb.jpg",full="ai01-3.jpg"),dict(thumb="ai01-2-thumb.jpg",full="ai01-2.jpg"),
-     dict(thumb="ai01-9-thumb.jpg",full="ai01-9.jpg")],
-   concept="여름 해변에서 쓰는 산뜻한 선크림을 콘셉트로, 모래·물방울·햇살 질감을 강조해 만든 브랜드 광고 영상입니다.",
-   flow="제품 이미지를 기반으로 AI 이미지 생성 → 배경·질감 연출 컷 제작 → AI 영상 생성으로 움직임을 더해 편집",
-   keywords=["여름","해변","모래질감","워터드롭"]),
- dict(title="에너지 음료",kind="video",still="ai02-still.jpg",src="ai02.mp4",
-   concepts=[dict(thumb="ai02-8-thumb.jpg",full="ai02-8.jpg"),
-     dict(thumb="ai02-1-thumb.jpg",full="ai02-1.jpg"),
-     dict(thumb="ai02-2-thumb.jpg",full="ai02-2.jpg"),dict(thumb="ai02-3-thumb.jpg",full="ai02-3.jpg"),
-     dict(thumb="ai02-4-thumb.jpg",full="ai02-4.jpg"),dict(thumb="ai02-5-thumb.jpg",full="ai02-5.jpg"),
-     dict(thumb="ai02-6-thumb.jpg",full="ai02-6.jpg"),
-     dict(thumb="ai02-7-thumb.jpg",full="ai02-7.jpg")],
-   concept="탄산감과 과즙의 청량함을 강조한 에너지 음료 광고 영상입니다. 캔이 회전하고 과즙이 튀는 컷으로 시원한 무드를 표현했습니다.",
-   flow="브랜드 콘셉트 이미지 제작 → 캔 회전·과즙 스플래시 등 여러 클립을 AI 영상으로 생성 → 리듬감 있게 편집",
-   keywords=["탄산","과즙","스플래시","청량감"]),
- dict(title="효모 샴푸",kind="video",still="ai03-still.jpg",src="ai03.mp4",
-   concepts=[dict(thumb="ai03-5-thumb.jpg",full="ai03-5.jpg"),
-     dict(thumb="ai03-4-thumb.jpg",full="ai03-4.jpg"),
-     dict(thumb="ai03-3-thumb.jpg",full="ai03-3.jpg"),
-     dict(thumb="ai03-8-thumb.jpg",full="ai03-8.jpg"),
-     dict(thumb="ai03-9-thumb.jpg",full="ai03-9.jpg"),dict(thumb="ai03-6-thumb.jpg",full="ai03-6.jpg"),
-     dict(thumb="ai03-11-thumb.jpg",full="ai03-11.jpg"),dict(thumb="ai03-10-thumb.jpg",full="ai03-10.jpg"),
-     dict(thumb="ai03-7-thumb.jpg",full="ai03-7.jpg"),
-     dict(thumb="ai03-1-thumb.jpg",full="ai03-1.jpg")],
-   concept="천연 효모 성분을 강조한 프리미엄 헤어케어 브랜드 영상입니다. 습기 찬 유리와 풍성한 거품으로 부드러운 무드를 표현했습니다.",
-   flow="브랜드 콘셉트 이미지 제작 → 펌핑·거품·습기 연출 컷을 AI 영상으로 각각 생성 → 하나의 흐름으로 편집",
-   keywords=["프리미엄","습기","거품","무드컷"]),
- dict(title="망고바",kind="video",still="ai04-still.jpg",src="ai04.mp4",
-   concepts=[dict(thumb="ai04-3-thumb.jpg",full="ai04-3.jpg"),
-     dict(thumb="ai04-8-thumb.jpg",full="ai04-8.jpg"),dict(thumb="ai04-9-thumb.jpg",full="ai04-9.jpg"),
-     dict(thumb="ai04-4-thumb.jpg",full="ai04-4.jpg"),dict(thumb="ai04-1-thumb.jpg",full="ai04-1.jpg"),
-     dict(thumb="ai04-5-thumb.jpg",full="ai04-5.jpg"),
-     dict(thumb="ai04-6-thumb.jpg",full="ai04-6.jpg"),dict(thumb="ai04-7-thumb.jpg",full="ai04-7.jpg")],
-   concept="실제 판매 중인 망고 아이스바를 소재로, 해변·카페·가족 일상 등 다양한 무드의 포스터와 라이프스타일 컷을 담은 광고 영상입니다.",
-   flow="제품 이미지를 기반으로 다양한 무드의 AI 콘셉트 이미지 생성 → AI 영상 생성으로 완성 영상 제작",
-   keywords=["여름","라이프스타일","포스터","무드컷"]),
- dict(title="텀블러",kind="video",still="ai05-still.jpg",src="ai05.mp4",
-   concepts=[dict(thumb="ai05-2-thumb.jpg",full="ai05-2.jpg"),dict(thumb="ai05-1-thumb.jpg",full="ai05-1.jpg"),
-     dict(thumb="ai05-5-thumb.jpg",full="ai05-5.jpg"),dict(thumb="ai05-3-thumb.jpg",full="ai05-3.jpg"),
-     dict(thumb="ai05-4-thumb.jpg",full="ai05-4.jpg"),dict(thumb="ai05-6-thumb.jpg",full="ai05-6.jpg")],
-   concept="컬러풀한 홈 스타일링 속에 자연스럽게 녹아드는 라이프스타일 텀블러 콘셉트 비주얼입니다.",
-   flow="레퍼런스 무드보드를 바탕으로 AI 이미지 생성 → 합성·보정으로 완성도 마무리",
-   keywords=["라이프스타일","컬러풀","무드샷"]),
-]
-
-# 인터뷰 Q&A — 채팅형, 첫 인사 → 5문항 → 마무리 인사 순서로 진행되고, 끝나면 3초 뒤 처음부터 다시 재생됨
-# 각 항목은 (질문, 답변) 튜플. q 또는 a를 None으로 두면 그쪽 말풍선 없이 반대쪽만 혼자 나온다(첫/끝 인사용).
-# 상대방의 인사와 첫 질문은 한 세트라 같은 말풍선 안에 줄바꿈(\n)으로 묶어서 하나로 표시한다.
-interview=[
- (None,
-  "안녕하세요. 반갑습니다. 디자이너 김근하 입니다."),
- ("네, 반갑습니다.\n디자인만 하신게 아니라 기획·촬영·신제품 개발까지 맡아오셨네요?",
-  "디자이너로 시작했지만, 경력이 쌓이면서 자연스럽게 영역이 넓어지게 되었습니다. 평소 업무 관련된 분야에 호기심이 많은 편이라, 더 적극적으로 새로운 걸 해보고 싶은 마음도 있었어요. 그 과정에서 디자인을 대하는 생각도 더 깊어지고 그 자체를 즐길 수 있었습니다."),
- ("같은 회사에 재입사하신 이력이 눈에 띄네요?",
-  "네, 청송기획에서 3년 2개월 근무한 뒤, 같은 대표님의 사업장인 주렁주렁에서 다시 합류하게 되었습니다. 두 회사를 합치면 총 6년 9개월 정도 근무하였습니다. 그만큼 신뢰를 쌓아온 시간이었다는 게, 지금 생각해도 뿌듯합니다."),
- ("전 직장에서 총괄하신 자사몰 시스템 구축, 구체적으로 어떤 프로젝트였나요?",
-  "고객이 별도 설치 없이 웹에서 직접 로고나 이미지, 텍스트를 편집해서 바로 제작까지 진행할 수 있는 셀프 편집 시스템을 구축하는 일이었어요. 원래는 주문 → 요청 → 시안 → 피드백 → 수정을 거치는 방식이었는데, 그 과정을 고객이 직접 만들고 바로 진행하는 구조로 바꾸는 작업이었습니다."),
- ("개발자가 아니신데 부담스럽진 않으셨나요?",
-  "외주업체와 진행하는 장기 프로젝트라 걱정이 없었던 건 아니었지만, 회사에서 저에게 맡겨주신 데는 이유가 있을 거라 생각했고 기왕 맡은 일이니 제대로 해내고 싶은 마음이 컸어요. 그 덕분에 오히려 더 꼼꼼하게 챙길 수 있었던 것 같습니다. 나중에 대표님께 저에게 맡기신 이유를 여쭤보니 회사 시스템을 가장 잘 아는 사람이기도 하고 꼼꼼하고 책임감있게 잘 처리해줄거라 믿고 맡길 수 있었다고 말씀해 주셨습니다."),
- ("큰 프로젝트면 회사에서 기대가 컸을 텐데, 도입 후 만족스러웠나요?",
-  "네, 처음 예상했던 기간보다 2개월 앞당겨 자사몰에 도입되었고, 오류도 첫 달 5% 미만에서 안정화 작업 이후 1% 미만으로 확인되었어요. 그 과정에서 외주업체에 100여 건 넘게 질문·수정·보완을 요청했는데, 담당자분이 \"이렇게까지 꼼꼼하게 확인하시는 경우는 드물다\"고 하시더라고요. 칭찬인지 그만 좀 괴롭히라는 뜻인지는 알면서도 모른 척했습니다. 도입 후엔 매출에도 30% 이상 기여했다는 공식 자료를 마케팅팀에서 받아볼 수 있었어요. 주변에서도 칭찬을 많이 받았고, 개인적으로도 만족스러운 프로젝트였습니다."),
- ("그 프로젝트 외에, 기억에 남는 작업물이 있으신가요?",
-  "네, 신제품 기획과 개발이요. 청송기획과 주렁주렁에서 여러 제품을 맡았는데, 매출 상위권까지 올린 제품도 여럿 있었고, 포상금도 받았습니다. 지금도 그때 만든 제품들이 여전히 회사 매출에 크게 기여하고 있다는 게 뿌듯합니다."),
- ("외주 업체나 다른 팀과 함께 일할 때, 특별히 신경 쓰시는 부분이 있나요?",
-  "서로 쓰는 말이 다르다는 걸 인정하는 데서 시작합니다. 제 입장만 말하면 평행선을 달리기 쉬워서, 상대방이 왜 그렇게 말하는지부터 이해하고 그 부분을 먼저 풀어드린 다음 제 뜻을 전달하는 편이에요. 거기에 화면이든 샘플이든 눈에 보이는 걸 먼저 만들어 보여드리면, 회의도 짧아지고 서로 얼굴 붉힐 일도 없습니다."),
- ("일하면서 가장 막막했던 순간은 언제였고, 어떻게 풀어가셨어요?",
-  "보통은 재고 위험을 최소화하기 위해 악성 재고를 활용해 신제품을 기획하는 편인데, 새로운 소재로 신제품을 기획하게 됐을 때는 시장 반응을 알 수 없는 상황에서 발주량을 정하는 게 쉽지 않았습니다. 그럴 때 좀 막막하죠. 어떻게 해야 하나 고민하다가 펀딩 시스템을 이용해보면 좋을 것 같아 회사에 제안하게 되었고, 와디즈 펀딩을 통해 선주문을 받을 수 있었어요. 시장 반응이 좋아 정식 신제품으로도 이어졌고요. 어려운 상황에서도 해결할 방법을 찾아, 새로운 시도를 두려워하지 않고 가능한 방법을 최대한 찾아내려 노력하는 편입니다."),
- ("AI를 이용해서 작업을 해보셨나요?",
-  "네, 요즘은 시간 날 때마다 이것저것 새로 나온 AI를 찾아보고 직접 만들어보는 재미에 푹 빠져 있어요. 해보고 싶은 것도 많고, 이젠 없어서는 안 될 든든한 동료가 되었습니다. AI 덕분에 영상광고도 많이 만들어보고, 하루하루가 기대됩니다. 실제 판매 중인 제품 다섯 개를 소재로 AI 이미지와 영상까지 만들어봤는데, 바로 아래에서 보실 수 있습니다."),
- ("다음 회사에 바라는 점이 있으신가요?",
-  "회사가 인재에게 바라는 건 결국 함께 성장해 줄 사람이라고 생각합니다. 저 역시 바라는 게 있다면, 제가 만든 결과가 제대로 존중받고 그 성장을 함께 나누는 경험입니다. 또한, 세대와 경력에 상관없이 의견을 자유롭게 주고받을 수 있는 문화를 기대하고 있습니다. 벽 없는 소통이야말로 서로에게 신선한 자극이 되어주기 때문입니다. 그 안에서 얻는 성취감이야말로 다음 결과를 만드는 가장 확실한 동기가 될 것입니다. 그렇게 서로를 존중하고 함께 성장하는 관계라면, 1+1이 2가 아니라 3이 되는 결과로 이어질 거라 믿습니다."),
- (None,
-  "여기까지, 이력서 한 장에는 다 담지 못했던 조금 더 저다운 이야기를 담아보았습니다. 조금이나마 전해졌으면 좋겠습니다. 아래 작업물을 정리해 두었으니 편하게 둘러봐 주세요.")]
+# ── 사이트 내용 데이터 ─────────────────────────────────────────────
+# 작업 목록·문구는 data/site.json에 있음(관리자 화면이 이 파일을 고침). 여기서는 읽어서 쓰기만 함.
+SITE=json.load(open(os.path.join(OUT,"data","site.json"),encoding="utf-8"))
+DETAIL_INITIAL=SITE["settings"]["detail_initial"]  # 처음에 보일 상세페이지 미리보기 개수(나머지는 「더보기」)
+PHOTO_INITIAL=SITE["settings"]["photo_initial"]    # 사진 촬영 섹션 처음에 보일 개수
+detail_desc=SITE["detail_desc"]
+package=SITE["package"]      # 패키지 코너 순서(3D 목업 영상 pk01-1 등은 숨김 — 파일만 남아 있음)
+editorial=SITE["editorial"]
+photo=SITE["photo"]          # 사진 촬영 순서(ph01~)
+products=SITE["products"]    # 기획·출시 제품
+project=SITE["project"]      # 셀프 디자인 프로젝트
+career=[(c["period"],c["company"],c["role"],c["desc"]) for c in SITE["career"]]
+ai_works=SITE["ai_works"]    # AI 활용 작업물(영상 + 콘셉트 이미지)
+interview=[(x["q"],x["a"]) for x in SITE["interview"]]  # 인터뷰 Q&A(질문이 null이면 마무리 인사)
 
 def masonry(ids):
     return '<div class="masonry">'+''.join(f'<div class="ph" data-full="assets/{i}.jpg"><img src="assets/{i}.jpg" loading="lazy" alt=""></div>' for i in ids)+'</div>'
@@ -284,10 +168,13 @@ dp_html=(f'<div class="moregroup" data-limit="{DETAIL_INITIAL}"><div class="dpgr
 # 큰 이미지 + 하단 썸네일 뷰어(클릭 시 큰 이미지 교체) — 패키지·편집 공용
 # .png가 있으면 우선 사용. 단, 실제로 투명 영역이 있는 누끼 PNG만 대리석 배경 위에 그림자로 표시.
 # 배경이 채워진 PNG(투명 없음)는 jpg처럼 원본 배경 그대로 표시.
-import subprocess
 def _has_alpha(path):
+    # PNG 헤더만 읽어 투명(알파) 채널 여부 판단 — 맥 전용 sips 대신 어디서나 동작하도록
     try:
-        return "hasAlpha: yes" in subprocess.check_output(["sips","-g","hasAlpha",path],text=True)
+        with open(path,"rb") as f: data=f.read()
+        if data[:8]!=b"\x89PNG\r\n\x1a\n": return False
+        color_type=data[25]
+        return color_type in (4,6) or b"tRNS" in data[:data.find(b"IDAT")]
     except Exception:
         return False
 
@@ -317,23 +204,8 @@ def media(im):
 
 # 패키지 코너 설명 — 큰 이미지 바로 아래에 표시, 작은 이미지를 누르면 해당 제품 설명으로 바뀜.
 # 키는 제품 기본 이름(pk01-1 영상은 pk01 설명을 함께 씀). shot=True면 제품촬영 100% + DSLR 카메라 추가.
-PACKAGE_NOTES={
- "pk01":dict(title="하이메디 힐패드",shot=True,colors=["#EBE897","#FFFCF2","#5A503B"],
-   concept="버터 옐로와 크림 화이트로 발 관리 제품의 부드럽고 촉촉한 이미지를 잡고, 손글씨 카피와 잎사귀 일러스트로 의료용품의 딱딱함을 덜었습니다. 앞면에는 착용 컷과 돋보기 클로즈업으로 실리콘 코팅 효과를 보여주고, 보습·각질 케어 같은 효능을 원형 아이콘으로 정리해 진열대에서도 한눈에 읽히도록 했습니다."),
- "pk02":dict(title="하이메디 가래뚝",shot=True,colors=["#1F3E8C","#F4F6FA","#E2312F"],
-   concept="가래를 '뚝' 끊어낸다는 제품명의 의미를 살려, 굵은 붓글씨 타이포와 힘 있는 붓 터치로 시원한 효과를 표현했습니다. 신뢰감 있는 네이비와 화이트를 바탕에 두고 폐 일러스트와 레드 포인트로 사용 목적을 바로 이해하게 했으며, 측면에는 사용법 사진과 작동 원리를 단계별로 담았습니다."),
- "pk04":dict(title="하이메디 Compression 종아리 서포트",shot=False,colors=["#1A6E73","#F4F6F6","#F2D21B"],
-   concept="다리 붓기와 피로를 덜어주는 압박 서포트라 딥 틸 그린을 메인으로 써서 의료기기의 신뢰감과 산뜻함을 함께 담았습니다. 'Compression Therapy' 영문 타이포를 크게 배치하고 다리 라인을 감싸는 옐로 곡선으로 압박 효과를 시각화했으며, 뒷면에는 사이즈 표와 인증 마크를 정리해 구매 전 확인이 쉽도록 했습니다."),
- "pk05":dict(title="하이메디 힘찬벨트",shot=True,colors=["#151515","#FFFFFF","#E52521"],
-   concept="강한 지지력을 앞세운 허리 벨트라 블랙 바탕에 레드·화이트 볼드 타이포를 써서 '힘'이 느껴지는 강렬한 인상을 만들었습니다. 도르래 시스템의 작동 원리를 화살표 그래픽과 확대 컷으로 보여주고 블루 라인으로 허리를 받쳐주는 구조를 강조했으며, 측면에는 사이즈와 착용법을 정리했습니다."),
- "pk03":dict(title="하이메디 홀이중 허리보호대",shot=True,colors=["#8E7B6B","#F5EFE6","#E0262B"],
-   concept="홀 이중 구조의 허리보호대라 웜 토프 브라운과 베이지를 메인으로 써서 편안하고 부드러운 착용감을 전달했습니다. 브랜드 레드 띠지와 제품명으로 시선을 모으고 인증 마크와 기능 아이콘을 하단에 모아 신뢰를 더했으며, 뒷면에는 착용 순서를 일러스트로 정리해 처음 쓰는 분도 쉽게 따라 하도록 했습니다."),
- "pk06":dict(title="바디프라임 클립 비강확장기",shot=False,colors=["#1F3C88","#F5F7FB","#9CC3EE"],
-   concept="의료기기다운 신뢰감을 위해 딥 네이비와 화이트를 기본으로 쓰고, 클립 모양을 크게 살린 반투명 그래픽으로 제품을 직관적으로 보여줬습니다. 'body prime' 손글씨 로고와 도트 패턴으로 딱딱하지 않은 인상을 더했고, 'XS·S·M·L 사이즈 모두 증정' 같은 핵심 혜택을 하단에 배치해 구매 이유를 분명히 했습니다."),
- "pk07":dict(title="시하미나 실크 바이오틱스 여성청결제",shot=False,colors=["#FFFFFF","#111111"],
-   concept="실크 바이오틱스 여성청결제의 고급스러움을 위해 컬러를 덜어내고 블랙 1도 인쇄만으로 완성했습니다. 브랜드 이니셜 'SM' 모노그램을 상자 두 면에 걸칠 만큼 크게 키워 진열했을 때 하나의 그래픽처럼 보이게 했고, 뚜껑 윗면 엠블럼과 정돈된 표기사항 레이아웃으로 절제된 프리미엄 무드를 만들었습니다."),
-}
-PACKAGE_TOOLS=["Adobe Photoshop","Adobe Illustrator"]
+PACKAGE_NOTES=SITE["package_notes"]  # 제품별 설명(제목·shot·colors·concept) — data/site.json
+PACKAGE_TOOLS=SITE["package_tools"]
 def pkg_note_html(key,n,active):
     roles="기획·디자인"+("·제품촬영" if n["shot"] else "")+" 100%"  # 상세페이지와 같은 '역할 → %' 순서
     tools=PACKAGE_TOOLS+(["DSLR 카메라"] if n["shot"] else [])
