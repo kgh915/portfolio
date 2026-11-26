@@ -384,7 +384,7 @@ img{display:block;max-width:100%}
 .morebtn span{font-weight:400;opacity:.75;margin-left:4px}
 .morebtn:hover{background:var(--accent);color:#fff}
 /* 상세페이지 팝업 */
-.dpop{position:fixed;inset:0;z-index:110;background:rgba(8,24,22,.94);display:none}
+.dpop{position:fixed;inset:0;z-index:110;background:rgba(8,24,22,.97);display:none}
 .dpop.on{display:block}
 .dpop-scroll{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;cursor:zoom-out;padding:40px 16px}
 .dpop-body{max-width:860px;margin:0 auto;background:#fff;cursor:default;box-shadow:0 30px 80px rgba(0,0,0,.5)}
@@ -395,4 +395,39 @@ img{display:block;max-width:100%}
 .dpop-nav:hover{background:rgba(255,255,255,.3)}
 .dpop-nav.prev{left:22px}.dpop-nav.next{right:22px}
 @media(max-width:900px){.dpgrid{grid-template-columns:repeat(3,1fr);gap:22px}}
-@media(max-width:560px){.dpgrid{grid-template-columns:repeat(2,1fr);gap:14px}.dpop-scroll{padding:56px 0 0}.dpop-x{top:8px;right:10px}.dpop-nav{width:40px;height:40px;font-size:26px;background:rgba(16,48,46,.55)}.dpop-nav.prev{left:6px}.dpop-nav.next{right:6px}}
+@media(max-width:560px){.dpgrid{grid-template-columns:repeat(2,1fr);gap:14px}.dpop-scroll{padding:56px 0 0}.dpop-x{top:8px;right:10px}.dpop-nav{top:auto;bottom:16px;transform:none;width:44px;height:44px;font-size:26px;background:rgba(16,48,46,.75)}.dpop-nav.prev{left:12px}.dpop-nav.next{right:12px}}
+/* 상세페이지 팝업 상단 메모 — 작업명 · 기여한 부분 · 기획 컨셉
+   어두운 팝업 배경 위에 반투명(흰색 3%) 박스, 테두리는 흰색 40%.
+   박스 아래 간격은 위(PC 76px / 모바일 64px)보다 20% 넓게(PC 91px / 모바일 77px) */
+.dpop-wrap{max-width:860px;margin:0 auto}
+.dpop-note{margin:36px 0 91px;padding:32px 40px 30px;border-radius:5px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.4);color:#fff;cursor:default}
+.dpop-note[hidden]{display:none}
+.dpop-note h3{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.35;color:#fff}
+.dpop-note h3+.dprow{margin-top:22px}
+.dproles{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+/* 기여도(%) 배지 = 사용툴 배지와 같은 스타일(민트 테두리·투명 배경) */
+.dproles span{font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:transparent;border:1px solid var(--accent);color:#fff}
+.dproles span.ext{background:transparent;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.75);font-weight:500}
+.dprow{display:flex;align-items:baseline;gap:14px;margin-top:12px}
+.dprow .dplabel{margin-top:0;flex:0 0 52px}
+.dprow .dproles{margin-top:0}
+/* 사용툴 — 박스 없이 글자만 (여러 개면 · 로 구분) */
+.dproles.dptools{gap:0}
+.dproles.dptools span{font-size:14px;font-weight:500;padding:0;border:0;border-radius:0;background:none;color:#fff}
+.dproles.dptools span+span::before{content:"·";margin:0 6px;color:rgba(255,255,255,.5)}
+.dplabel{margin-top:20px;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
+.dpop-note p{margin-top:6px;font-size:15px;line-height:1.75;color:#fff}
+@media(max-width:560px){.dpop-note{margin:8px 16px 77px;padding:24px 20px 22px}.dpop-note h3{font-size:19px}.dpop-note p{font-size:14px}}
+/* 팝업 메모 — 컬러무드(주컬러 동그라미, 최대 3개) */
+.dpcolors{display:flex;gap:10px;align-items:center}
+.dpsw{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.25)}
+.dprow:has(.dpcolors){align-items:center}
+/* 상세페이지 목업 — 태블릿·휴대폰 화면 자동 스크롤 (움직임은 build.py 스크립트에서 계산) */
+.mockwrap{position:relative;display:inline-block;max-width:100%;line-height:0}
+.dshots .dshot:first-child .mockwrap>img{width:auto;max-width:100%;max-height:560px;object-fit:contain}
+.mockscreen{position:absolute;overflow:hidden;background:#fff}
+.mockscroll{width:100%;will-change:transform,opacity}
+.mockscroll img{display:block;width:100%;height:auto}
+.mockphone{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.dshots .dshot:first-child .mockscroll img{width:100%;max-width:none;max-height:none;height:auto;object-fit:fill}
+.dshots .dshot:first-child img.mockphone{width:100%;height:100%;max-width:none;max-height:none;object-fit:fill}

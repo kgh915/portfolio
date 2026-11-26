@@ -30,7 +30,7 @@ DETAIL_INITIAL=20  # 처음에 보일 미리보기 개수 (나머지는 「더�
 PHOTO_INITIAL=20   # 사진 촬영 섹션 처음에 보일 개수
 detail_desc="PC와 모바일 어디서나 가독성과 설득력을 잃지 않는 상세페이지입니다. 제품의 핵심 가치를 한눈에 전달하고, 감각적이고 트렌디한 비주얼로 구매 전환까지 이끄는 것을 목표로 작업했습니다. 공기청정기·건강기능·뷰티·생활용품 등 다양한 카테고리의 상세페이지를 기획부터 디자인, 제품 촬영까지 직접 진행했습니다."
 
-package=["pk01","pk01-1","pk02","pk02-1","pk04","pk04-1","pk05","pk05-1","pk03"]
+package=["pk01","pk01-1","pk02","pk02-1","pk04","pk04-1","pk05","pk05-1","pk03","pk06","pk07"]  # pk06: 바디프라임 비강확장기, pk07: 시하미나 여성청결제 단상자 도면(패키지 2026 폴더)
 editorial=["ed01","ed02","ed03","ed04","ed05","ed06","ed07","ed08"]
 photo=autoseq("ph")  # assets 폴더의 ph01,ph02… 를 자동 인식 (파일만 넣으면 추가됨)
 
@@ -177,7 +177,7 @@ def tiles(ids,limit=None):
     def src(i):
         return av(f"{i}-thumb.jpg") if os.path.exists(os.path.join(OUT,"assets",f"{i}-thumb.jpg")) else f"assets/{i}.jpg"
     cells=''.join(f'<div class="tile{" more" if limit and n>=limit else ""}" data-full="assets/{i}.jpg"><img src="{src(i)}" loading="lazy" alt=""></div>' for n,i in enumerate(ids))
-    return f'<div class="moregroup"><div class="tiles">{cells}</div>{more_btn(len(ids),limit) if limit else ""}</div>'
+    return f'<div class="moregroup" data-limit="{limit or 0}"><div class="tiles">{cells}</div>{more_btn(len(ids),limit) if limit else ""}</div>'
 
 # 실제 출시 제품 카드 — 사진(클릭 시 크게 보기)+제품명+역할 배지(1개)+성과 배지+컨셉 한 줄+실제 판매 페이지 링크(보조용, 새 탭)
 # 전 제품 기획·촬영·상세페이지까지 의뢰인이 직접 담당해서, 역할 배지는 공통으로 고정.
@@ -233,7 +233,28 @@ ai_html=''.join(ai_card(w) for w in ai_works)
 chat_qa_json=html.escape(json.dumps(interview,ensure_ascii=False),quote=True)
 
 # 상세페이지 — 목업 쇼케이스(세로 나열)
-detail_html=''.join(f'<figure class="dshot"><img src="assets/{i}.jpg" loading="lazy" alt="상세페이지 디자인 목업"></figure>' for i in detail_imgs)
+# 맨 위 목업(ds01): 태블릿 화면 → 휴대폰 화면 순서로 번갈아 공기청정기 상세페이지(dp10)가 천천히 자동 스크롤됨(무한 반복).
+# 화면 위치는 ds01.jpg(2176x1040) 기준 실측값(%) — 목업 이미지를 바꾸면 MOCK_TABLET/MOCK_PHONE_SCREEN/MOCK_PHONE도 다시 재야 함.
+# 휴대폰은 태블릿 위에 겹쳐 있으므로, 같은 목업 이미지를 휴대폰 모양으로만 잘라(MOCK_PHONE) 태블릿 화면 위에 한 번 더 얹음.
+MOCK_W,MOCK_H=2176,1040
+MOCK_TABLET=dict(x=675,y=106,w=626,h=827,radius="6px")
+MOCK_PHONE_SCREEN=dict(x=1196,y=436,w=261,h=540,radius="8.4% / 4.1%")
+MOCK_PHONE="inset(40.8% 32.4% 4.1% 54.1% round 2.1% / 4.4%)"
+MOCK_DETAIL="dp10"
+def mock_screen(cls,r,pages):
+    return (f'<div class="mockscreen {cls}" style="left:{r["x"]/MOCK_W*100:.3f}%;top:{r["y"]/MOCK_H*100:.3f}%;'
+            f'width:{r["w"]/MOCK_W*100:.3f}%;height:{r["h"]/MOCK_H*100:.3f}%;border-radius:{r["radius"]}">'
+            f'<div class="mockscroll">{pages}</div></div>')
+def mock_html():
+    d=next(x for x in details if x["id"]==MOCK_DETAIL)
+    pages=''.join(f'<img src="{av(p["src"])}" width="{p["w"]}" height="{p["h"]}" alt="" loading="lazy">' for p in d["pages"])
+    return (f'<figure class="dshot"><div class="mockwrap">'
+            f'<img src="{av("ds01.jpg")}" loading="lazy" alt="상세페이지 디자인 목업">'
+            f'{mock_screen("tablet",MOCK_TABLET,pages)}'
+            f'<img class="mockphone" src="{av("ds01.jpg")}" alt="" aria-hidden="true" style="clip-path:{MOCK_PHONE}">'
+            f'{mock_screen("phone",MOCK_PHONE_SCREEN,pages)}'
+            f'</div></figure>')
+detail_html=mock_html()+''.join(f'<figure class="dshot"><img src="assets/{i}.jpg" loading="lazy" alt="상세페이지 디자인 목업"></figure>' for i in detail_imgs if i!="ds01")
 
 # 상세페이지 미리보기 카드 — 클릭하면 상세페이지 전체가 팝업으로 열림(세로 스크롤).
 # 상세페이지가 여러 장이면(분할 파일) 순서대로 틈 없이 이어 붙여 보여줌. 데이터는 data-pages(JSON)에 담음.
@@ -243,9 +264,21 @@ def dp_card(n,d):
     if not d["pages"]:
         return f'<div class="dpcard nodetail{more}">{img}</div>'
     pages=html.escape(json.dumps([[av(p["src"]),p["w"],p["h"]] for p in d["pages"]]),quote=True)
-    return (f'<button type="button" class="dpcard{more}" data-pages="{pages}" data-title="{html.escape(d["title"])}">'
+    # 팝업 상단 메모(기여한 부분·기획 컨셉) — 둘 다 없으면 메모 영역 자체를 보이지 않음
+    # 기여도: 100%인 역할은 한 배지로 합침(예: 기획/디자인 100%), 그 외(%가 다르거나 '업체제공' 등)는 각각 표시
+    note=""
+    contrib=d.get("contrib") or []
+    full=[c["role"] for c in contrib if c.get("pct")==100]
+    badges=([{"t":"·".join(full)+" 100%"}] if full else [])
+    for c in contrib:
+        if c.get("pct")==100: continue
+        if c.get("pct") is not None: badges.append({"t":f'{c["role"]} {c["pct"]}%'})
+        else: badges.append({"t":f'{c["role"]}-{c.get("text","")}',"ext":1})
+    if badges or d.get("tools") or d.get("colors") or d.get("concept"):
+        note=' data-note="'+html.escape(json.dumps({"contrib":badges,"tools":d.get("tools") or [],"colors":d.get("colors") or [],"concept":d.get("concept") or ""},ensure_ascii=False),quote=True)+'"'
+    return (f'<button type="button" class="dpcard{more}" data-pages="{pages}" data-title="{html.escape(d["title"])}"{note}>'
             f'{img}<span class="dpview">상세보기</span></button>')
-dp_html=(f'<div class="moregroup"><div class="dpgrid">{"".join(dp_card(n,d) for n,d in enumerate(details))}</div>'
+dp_html=(f'<div class="moregroup" data-limit="{DETAIL_INITIAL}"><div class="dpgrid">{"".join(dp_card(n,d) for n,d in enumerate(details))}</div>'
          f'{more_btn(len(details),DETAIL_INITIAL)}</div>')
 
 # 큰 이미지 + 하단 썸네일 뷰어(클릭 시 큰 이미지 교체) — 패키지·편집 공용
@@ -261,7 +294,10 @@ def _has_alpha(path):
 def asset(im):
     png=os.path.join(OUT,"assets",f"{im}.png")
     if os.path.exists(png):
-        return (f"assets/{im}.png", _has_alpha(png))
+        # 같은 이름의 .webp가 있으면(tools/optimize_images.py로 만든 가벼운 버전) 그걸 사용. 누끼 여부는 원본 PNG로 판단.
+        webp=os.path.join(OUT,"assets",f"{im}.webp")
+        src=av(f"{im}.webp") if os.path.exists(webp) else f"assets/{im}.png"
+        return (src, _has_alpha(png))
     return (f"assets/{im}.jpg", False)
 
 # 항목별 미디어 판별: .mp4가 있으면 동영상(음소거·자동반복), 없으면 이미지(asset 규칙)
@@ -271,9 +307,9 @@ def media(im):
         # 포스터: 자기 이름 이미지 우선, 없으면 base 제품 이미지(pk02-1 → pk02)
         poster=""
         for cand in (im, im.split("-")[0]):
-            for ext in ("png","jpg"):
+            for ext in ("webp","png","jpg"):  # 가벼운 .webp가 있으면 우선
                 if os.path.exists(os.path.join(base,f"{cand}.{ext}")):
-                    poster=f"assets/{cand}.{ext}";break
+                    poster=av(f"{cand}.{ext}");break
             if poster:break
         return {"kind":"video","src":f"assets/{im}.mp4","poster":poster,"cut":False}
     src,cut=asset(im)
@@ -330,25 +366,92 @@ ICON_UP='<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="r
 
 # 상세페이지 팝업 + 더보기/접기 스크립트 (f-string 밖에 두어 중괄호 이스케이프 불필요)
 DP_JS=r'''
+// 목업 자동 스크롤 — 태블릿 → 휴대폰 순서로 번갈아 재생(무한 반복). 약 45px/초로 천천히.
+// 한 화면의 순서: 첫 화면에서 잠깐 멈춤 → 끝까지 스크롤 → 잠깐 멈춤 → 흰색으로 서서히 사라짐 → 첫 화면이 서서히 나타나 멈춤.
+// 그동안 다른 화면은 첫 화면에서 멈춰 있음. 화면 크기가 바뀌면 거리·시간을 다시 계산.
+(function(){
+  const wrap=document.querySelector('.mockwrap');if(!wrap)return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const screens=['tablet','phone'].map(c=>wrap.querySelector('.mockscreen.'+c)).filter(Boolean);
+  const SPEED=45,HOLD=1500,FADE=2500,WHITE=400;
+  let anims=[],visible=false;
+  function setup(){
+    const segs=screens.map(scr=>{const inner=scr.querySelector('.mockscroll');
+      const dist=inner.offsetHeight-scr.clientHeight;
+      return {inner,dist,len:dist>0?HOLD+dist/SPEED*1000+HOLD+FADE+WHITE+FADE:0};});
+    if(segs.some(g=>g.len<=0))return;
+    anims.forEach(a=>a.cancel());
+    const total=segs.reduce((t,g)=>t+g.len,0);let start=0;
+    anims=segs.map(g=>{
+      const o=t=>(start+t)/total, top='translateY(0)', bot=`translateY(${-g.dist}px)`;
+      let t=0;const k=[{offset:0,transform:top,opacity:1}];
+      if(start>0)k.push({offset:o(0),transform:top,opacity:1});
+      t+=HOLD;k.push({offset:o(t),transform:top,opacity:1});
+      t+=g.dist/SPEED*1000;k.push({offset:o(t),transform:bot,opacity:1});
+      t+=HOLD;k.push({offset:o(t),transform:bot,opacity:1});
+      t+=FADE;k.push({offset:o(t),transform:bot,opacity:0});
+      k.push({offset:o(t)+0.0001,transform:top,opacity:0});
+      t+=WHITE;k.push({offset:o(t),transform:top,opacity:0});
+      t+=FADE;k.push({offset:Math.min(1,o(t)),transform:top,opacity:1});
+      if(o(t)<1)k.push({offset:1,transform:top,opacity:1});
+      start+=g.len;
+      return g.inner.animate(k,{duration:total,iterations:Infinity});
+    });
+    if(!visible)anims.forEach(a=>a.pause());
+  }
+  let timer;new ResizeObserver(()=>{clearTimeout(timer);timer=setTimeout(setup,150);}).observe(wrap);
+  // 목업이 화면에 보일 때만 움직이고, 화면 밖으로 나가면 그 자리에서 멈춤(배터리·처리 부담 줄이기)
+  new IntersectionObserver(es=>es.forEach(e=>{visible=e.isIntersecting;anims.forEach(a=>visible?a.play():a.pause());})).observe(wrap);
+})();
 // 더보기 / 접기 — .moregroup 안의 .more 항목을 한꺼번에 펼치고 접음
+// 처음 보일 개수(data-limit)는 화면 폭에 따른 열 개수에 맞춰 마지막 줄이 꽉 차도록 올림(예: 20개·3열 → 21개)
 document.querySelectorAll('.moregroup').forEach(g=>{
-  const b=g.querySelector('.morebtn');if(!b)return;
+  const b=g.querySelector('.morebtn'),grid=g.firstElementChild,base=+g.dataset.limit||0;if(!b||!base)return;
+  const items=[...grid.children];
+  const label=()=>{b.innerHTML=g.classList.contains('open')?'접기':'더보기 <span>+'+b.dataset.more+'</span>';};
+  function fit(){
+    const cols=getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length||1;
+    const limit=Math.ceil(base/cols)*cols;
+    items.forEach((el,i)=>el.classList.toggle('more',i>=limit));
+    const rest=items.length-limit;b.dataset.more=rest;b.parentElement.hidden=rest<=0;label();
+  }
+  fit();let t;new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(fit,100);}).observe(grid);
   b.addEventListener('click',()=>{
-    const open=g.classList.toggle('open');
-    b.innerHTML=open?'접기':'더보기 <span>+'+b.dataset.more+'</span>';
+    const open=g.classList.toggle('open');label();
     if(!open)b.scrollIntoView({block:'center'});
   });
 });
 // 상세페이지 팝업 — 전체 화면, 팝업 안에서 위아래 스크롤. X 버튼·바깥 클릭·ESC로 닫힘
 // ‹ › 버튼(또는 ←/→ 키)으로 상세페이지가 있는 다음·이전 작업으로 바로 이동. 어떤 경우든 항상 맨 위부터 보여줌
 (function(){
-  const pop=document.getElementById('dpop'),body=pop.querySelector('.dpop-body'),scroller=pop.querySelector('.dpop-scroll');
+  const pop=document.getElementById('dpop'),body=pop.querySelector('.dpop-body'),note=pop.querySelector('.dpop-note'),wrap=pop.querySelector('.dpop-wrap'),scroller=pop.querySelector('.dpop-scroll');
   const cards=[...document.querySelectorAll('.dpcard[data-pages]')];let cur=0;
   function show(i){
     cur=(i+cards.length)%cards.length;const card=cards[cur];
     const pages=JSON.parse(card.dataset.pages);
     body.innerHTML=pages.map((p,i)=>'<img src="'+p[0]+'" width="'+p[1]+'" height="'+p[2]+'" alt="" '+(i?'loading="lazy"':'')+'>').join('');
     body.setAttribute('aria-label',card.dataset.title+' 상세페이지');
+    // 상단 메모 — 작업명 · 기여한 부분(배지) · 기획 컨셉 (상세 이미지 위, 별도 박스)
+    note.innerHTML='';note.hidden=!card.dataset.note;
+    if(card.dataset.note){
+      const n=JSON.parse(card.dataset.note),box=note;
+      const h=document.createElement('h3');h.textContent=card.dataset.title;box.appendChild(h);
+      function row(label,items,cls){const w=document.createElement('div');w.className='dprow';
+        const l=document.createElement('div');l.className='dplabel';l.textContent=label;w.appendChild(l);
+        const r=document.createElement('div');r.className='dproles '+cls;
+        items.forEach(it=>{const s=document.createElement('span');s.textContent=it.t;if(it.ext)s.className='ext';r.appendChild(s);});
+        w.appendChild(r);box.appendChild(w);}
+      if(n.contrib.length)row('기여도',n.contrib,'');
+      if(n.tools.length)row('사용툴',n.tools.map(t=>({t})),'dptools');
+      // 컬러무드 — 디자인의 주컬러(동그라미, 최대 3개)
+      if(n.colors&&n.colors.length){const w=document.createElement('div');w.className='dprow';
+        const l=document.createElement('div');l.className='dplabel';l.textContent='컬러무드';w.appendChild(l);
+        const r=document.createElement('div');r.className='dpcolors';
+        n.colors.slice(0,3).forEach(c=>{const sw=document.createElement('span');sw.className='dpsw';sw.style.background=c;sw.title=c;r.appendChild(sw);});
+        w.appendChild(r);box.appendChild(w);}
+      if(n.concept){const l=document.createElement('div');l.className='dplabel';l.textContent='기획 컨셉';box.appendChild(l);
+        const p=document.createElement('p');p.textContent=n.concept;box.appendChild(p);}
+    }
     scroller.scrollTop=0;
   }
   function open(i){pop.classList.add('on');document.body.style.overflow='hidden';show(i);scroller.scrollTop=0;}
@@ -357,7 +460,7 @@ document.querySelectorAll('.moregroup').forEach(g=>{
   pop.querySelector('.dpop-x').addEventListener('click',close);
   pop.querySelector('.dpop-nav.prev').addEventListener('click',()=>show(cur-1));
   pop.querySelector('.dpop-nav.next').addEventListener('click',()=>show(cur+1));
-  scroller.addEventListener('click',e=>{if(!body.contains(e.target))close();});
+  scroller.addEventListener('click',e=>{if(!body.contains(e.target)&&!note.contains(e.target))close();});
   addEventListener('keydown',e=>{if(!pop.classList.contains('on'))return;
     if(e.key==='Escape')close();else if(e.key==='ArrowLeft')show(cur-1);else if(e.key==='ArrowRight')show(cur+1);});
 })();
@@ -483,7 +586,7 @@ html=f'''<!doctype html><html lang="ko"><head>
 </div><div class="wrap"><div class="copy">© 2026 KIM GEUNHA — PORTFOLIO. ALL RIGHTS RESERVED.</div></div></footer>
 
 <div class="lb" id="lb"><div class="x">×</div><div class="navbtn prev" id="lbPrev">‹</div><div class="navbtn next" id="lbNext">›</div><img src="" alt=""><video class="lb-vid" playsinline controls hidden></video><div class="lbplay" id="lbPlay" hidden>▶</div><span class="lbcap"></span></div>
-<div class="dpop" id="dpop" role="dialog" aria-modal="true"><button type="button" class="dpop-x" aria-label="닫기">×</button><button type="button" class="dpop-nav prev" aria-label="이전 상세페이지">‹</button><button type="button" class="dpop-nav next" aria-label="다음 상세페이지">›</button><div class="dpop-scroll"><div class="dpop-body"></div></div></div>
+<div class="dpop" id="dpop" role="dialog" aria-modal="true"><button type="button" class="dpop-x" aria-label="닫기">×</button><button type="button" class="dpop-nav prev" aria-label="이전 상세페이지">‹</button><button type="button" class="dpop-nav next" aria-label="다음 상세페이지">›</button><div class="dpop-scroll"><div class="dpop-wrap"><div class="dpop-note" hidden></div><div class="dpop-body"></div></div></div></div>
 
 <script>
 const nav=document.getElementById('nav');
