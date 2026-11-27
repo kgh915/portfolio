@@ -158,7 +158,9 @@ def dp_card(n,d):
     note=""
     contrib=d.get("contrib") or []
     full=[c["role"] for c in contrib if c.get("pct")==100]
-    badges=([{"t":"·".join(full)+" 100%"}] if full else [])
+    # 100% 역할은 '·'로 이어 붙임. 단, '⭐️ 제품기획 ⭐️'처럼 별로 끝나는 역할 뒤에는 점 대신 띄어쓰기
+    joined="".join((("" if i==0 else (" " if full[i-1].endswith("⭐️") else "·"))+r) for i,r in enumerate(full))
+    badges=([{"t":joined+" 100%"}] if full else [])
     for c in contrib:
         if c.get("pct")==100: continue
         if c.get("pct") is not None: badges.append({"t":f'{c["role"]} {c["pct"]}%'})
