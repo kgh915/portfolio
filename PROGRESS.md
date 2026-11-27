@@ -32,6 +32,8 @@
 | 기타 (11-27) | 상세페이지 미리보기 PC 한 줄 **5개**(1100px 이하 4·900 이하 3·560 이하 2, 의뢰인 확정). 크게 보기·상세 팝업에서 다음·이전 이미지 미리 받기 |
 | 5 (11-27) | 사용 설명서 = 관리자 화면 **'📖 사용법' 메뉴**(admin.js `MANUAL` 배열, 12항목 접었다 펴기: 처음 시작·기본 순서·글자·순서·숨기기/삭제·이미지·새 상세페이지·영상·통계·문제 해결·비밀번호/열쇠·용량/한도). 통계·사용법은 메뉴 맨 아래. 기획 과정 섹션 추가 시 사용법에도 항목 추가할 것 |
 | 섹션 순서 (11-27) | 관리자 **'섹션 순서·배경'** 메뉴: 가운데 9개 섹션(인터뷰~경력) 순서(끌기·번호)·숨기기·배경색(흰색·민트·연회색·아이보리 + 직접 선택). `site.json`의 `layout:[{key,bg,hidden}]`, build.py `SECTION_BLOCKS`·`middle_sections()`(흰 배경끼리 붙으면 구분선 자동, 흰색 아닌 배경은 `.sec.tinted`). 맨 위·맨 아래 고정. 같은 색 연속이면 경고. 새 섹션(상품 기획 보드) 추가 시 SECTION_BLOCKS·LAYOUT_DEFAULT(build.py·admin.js 둘 다)에 키 추가할 것 |
+| 디자인 (11-27) | 섹션 제목 색 `--title:#475351`·굵기 700(첫 화면 제목은 원래 색), 섹션 구분선 `.hr` 0.5px·더 연하게. 상세 기여도: 직접 기획 11개만 `⭐️ 제품기획 ⭐️`(뒤는 띄어쓰기), 나머지는 '기획' 제외 |
+| 상품 기획 보드 (11-27, **테스트만**) | 로컬 브랜치 `planning` + 원격 `test-planning`(https://portfolio-git-test-planning-kgh915.vercel.app). 섹션 키 `planning`(기획·출시 제품 아래), 제목 손글씨(나눔손글씨 펜, Google Fonts text= 부분 글자) '아이디어 통통! 상품기획 하는 디자이너!', 라인 탭으로 한 판씩, 조각 8종(아이디어·자료조사·러프·메모·샘플·출시·확장·결과), 화면 들어오면 순서대로 붙음, 휴대폰은 옆으로 넘김. 데이터 `site.json` planning.lines(예시 문구·빈칸). **남은 일**: 관리자에서 조각 이미지·메모 편집 기능, 실제 자료 교체, main 합칠 때 layout에서 planning **숨김**으로. 합치기 전 main 위로 rebase(style.css 끝부분 충돌 주의) |
 
 - 로컬 시험: `node tools/admin-dev.js` → http://localhost:8130/admin/ (비번 `local-test`, launch.json `admin-dev`). 로컬 저장·업로드는 폴더 파일을 직접 바꾸므로 시험 후 `git checkout data/ assets/` + 새로 생긴 이미지 삭제(`git status`로 확인). api/_lib.js를 고치면 admin-dev 서버 재시작 필요
 - 비밀값 안내 문서: `docs/admin/관리자_비밀값_설정방법.md`
