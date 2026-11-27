@@ -7,7 +7,7 @@
 1. `cd /Users/kgh/실습/portfolio_v2 && git switch admin-mode && git pull --ff-only origin admin-mode`
    - **의뢰인이 관리자 화면에서 저장하면 GitHub admin-mode 브랜치에 커밋이 생김** → 반드시 먼저 pull.
 2. 의뢰인이 세션 사이에 관리자 화면으로 바꾼 내용 확인:
-   `git log --oneline e9ccf61..HEAD` (e9ccf61 = 2026-11-27 세션 끝 기준)
+   `git log --oneline fbe4e4d..HEAD` (fbe4e4d = 2026-11-27 4단계 끝 기준)
    → "관리자 화면에서 내용 수정: …" 커밋이 있으면 `git diff 694b51d HEAD -- data/ assets/detail/details.json`로 무엇이 바뀌었는지 쉬운 말로 요약해 보여주고, **유지할지 되돌릴지 물어볼 것**
    (의뢰인이 순서 변경·삭제를 시험해 보기로 함. 시험용 변경이 실제 사이트에 합쳐지지 않게 확인 필요)
 3. 의뢰인에게 "어디까지 끝났고 이번에 무엇을 할지" 한두 줄로 알린 뒤 3-5 시작.
@@ -29,7 +29,7 @@
 | 3-4 | 관리자 화면 `admin/`(index.html·admin.js·admin.css, 한글 메뉴 12개: 기본정보·섹션소개·인터뷰·제품·프로젝트·AI·상세페이지·패키지·편집·사진·경력·About) + API `api/`(login·content·save). 글자 수정·▲▼ 순서·삭제·인터뷰/경력/기여도 추가·컬러 선택·저장. 저장 = 두 데이터 파일 한 커밋으로 GitHub(배포된 브랜치)에 → Vercel 자동 재빌드. **의뢰인이 미리보기에서 로그인·저장 성공 확인** |
 | 3-4+ (11-27) | 끌어서 순서 옮기기(⠿ 손잡이·이미지), 번호 배지 눌러 원하는 번호로 이동, **숨기기/보이기**(목록 항목 `hidden:true`, 이미지 이름은 `site.json`의 `hidden_images` → build.py `vis()`가 사이트에서 뺌). 의뢰인 시험 완료("완벽해"). 골드바 상패 1번 순서는 의뢰인 의도 → 유지 |
 | 3-5 (11-27) | 이미지 올리기·교체·추가: `api/upload.js`(줄인 이미지 1장 → GitHub blob만, 커밋 X) + `save.js`가 `uploads`(blob sha)·`removes`(같은 이름 옛 형식 .webp 등)를 글자와 **한 커밋**으로. 브라우저에서 크기 줄임: 사진 jpg 2200+썸네일, 패키지·편집 jpg 2200 / 누끼 PNG 1600(옛 .webp 자동 삭제), 제품 jpg 1000, AI 콘셉트 1600+700, 상세 미리보기 = 상세 이미지 첫 장 맨 위를 307:787로 잘라 자동 생성(가로 500, 직접 올리기도 가능·다시 올릴 때는 바꿀지 물어봄), 상세 이미지 가로 860·세로 4000 조각(dpNN 자동 번호). 새 제품·새 상세페이지·새 패키지(설명 칸 자동 생성) 추가. 영상은 업로드 불가 → GitHub 웹 업로드·HandBrake 안내창. 상단에 저장소 용량(GitHub API, 800MB↑ 경고). 저장 전 이미지 없는 새 항목 막음. build.py: 미리보기 파일 없는 상세는 건너뜀. **로컬 + 의뢰인 실제 업로드 시험 완료**(dp52 '테스트' 상세페이지 = 의뢰인 시험용, **숨김 상태로 두기로 함** — 지우지 말 것) |
-| 4 (11-27) | 통계: `api/track.js`(방문·클릭 숫자, sendBeacon, 봇 제외, 쿠키·IP 없음) → Upstash Redis 해시 `st:YYYY-MM-DD`(v, c:키, r:유입사이트, 400일 보관). 사이트 스크립트 `TRACK_JS`(build.py, load 1.5초 뒤, 세션당 방문 1회, localStorage `no-track`이면 안 셈), 상세 카드 `data-k=dpNN`. 관리자 '📊 통계' 탭(7일/4주/8주, 방문·연락처·작업 순위·유입) + "이 브라우저는 통계에서 제외" + 시험 메일. `api/weekly.js` + vercel.json cron `0 23 * * 0`(월 08시 KST, main에서만) → Resend(onboarding@resend.dev → STATS_EMAIL). 받을 주소 = ziziba81@naver.com(의뢰인 확정). **로컬 시험 완료. 의뢰인이 Upstash 연결·Resend 가입·비밀값 3개(RESEND_API_KEY, STATS_EMAIL, CRON_SECRET) 넣기 대기** — 안내: `docs/admin/관리자_비밀값_설정방법.md` 3절 |
+| 4 (11-27) | 통계: `api/track.js`(방문·클릭 숫자, sendBeacon, 봇 제외, 쿠키·IP 없음) → Upstash Redis 해시 `st:YYYY-MM-DD`(v, c:키, r:유입사이트, 400일 보관). 사이트 스크립트 `TRACK_JS`(build.py, load 1.5초 뒤, 세션당 방문 1회, localStorage `no-track`이면 안 셈), 상세 카드 `data-k=dpNN`. 관리자 '📊 통계' 탭(7일/4주/8주, 방문·연락처·작업 순위·유입) + "이 브라우저는 통계에서 제외" + 시험 메일. `api/weekly.js` + vercel.json cron `0 23 * * 0`(월 08시 KST, main에서만) → Resend(onboarding@resend.dev → STATS_EMAIL). 받을 주소 = ziziba81@naver.com(의뢰인 확정). **설정 완료(11-27)**: Upstash(upstash-kv-almond-diamond, 도쿄, Free, 접두어 KV, 모든 환경) 연결, Resend 가입(ziziba81@naver.com), 비밀값 3개 입력, 시험 메일 수신 확인. 주간 자동 메일은 main 합친 뒤부터 |
 
 - 로컬 시험: `node tools/admin-dev.js` → http://localhost:8130/admin/ (비번 `local-test`, launch.json `admin-dev`). 로컬 저장·업로드는 폴더 파일을 직접 바꾸므로 시험 후 `git checkout data/ assets/` + 새로 생긴 이미지 삭제(`git status`로 확인). api/_lib.js를 고치면 admin-dev 서버 재시작 필요
 - 비밀값 안내 문서: `docs/admin/관리자_비밀값_설정방법.md`
@@ -40,7 +40,7 @@
    - 대상: 상세페이지(미리보기 + 상세 이미지 여러 장, 세로 4000px 단위로 잘라 `assets/detail/dpNN/`), 패키지·편집·사진·제품·AI 콘셉트 이미지 추가/교체
    - 영상: 30MB 넘으면 경고 + 줄이는 방법(HandBrake) 안내, 큰 파일은 GitHub 웹 업로드 방법 안내
    - 관리자 화면에 **저장소 용량 표시**, 저장 전 미리보기(가능하면)
-2. ~~4단계 통계~~ 코드 완료, 의뢰인 가입·설정 후 확인만 남음. 이전 메모: Vercel Web Analytics 켜기(무료 월 5만 건, 1개월 보관) + 관리자 화면에 "이 브라우저는 통계에서 제외" 버튼 + 자체 클릭 카운터(무료 저장소) + 매주 메일(Resend 무료, 본인 이메일 — **받을 주소 의뢰인에게 확인**). 속도 영향 검토 후 보고
+2. ~~4단계 통계~~ 완료. 이전 메모: Vercel Web Analytics 켜기(무료 월 5만 건, 1개월 보관) + 관리자 화면에 "이 브라우저는 통계에서 제외" 버튼 + 자체 클릭 카운터(무료 저장소) + 매주 메일(Resend 무료, 본인 이메일 — **받을 주소 의뢰인에게 확인**). 속도 영향 검토 후 보고
 3. **5단계 사용 설명서**: 로그인, 수정, 이미지, 되돌리기(태그·GitHub), 토큰/비밀번호 교체, 통계, 용량
 4. **합치기**: 의뢰인 승인 후 admin-mode → main 병합, 배포 확인. 그 뒤 관리자 주소 = https://kimgeunha.vercel.app/admin/
 
