@@ -1,3 +1,4 @@
+import re
 # -*- coding: utf-8 -*-
 import os,json,html
 OUT=os.path.dirname(os.path.abspath(__file__))
@@ -408,6 +409,81 @@ mail_link=f'<a href="mailto:{C["email"]}">{esc(C["email"])}</a>'
 career_badges='\n'.join(f'      <span>{esc(x)}</span>' for x in S["career"]["badges"])
 about_html='\n'.join(f'    <p>{p}</p>' for p in T["about"]["paragraphs"])  # About 문단은 <br>·<b> 허용
 
+# ── 가운데 섹션(인터뷰~경력) — 순서·숨기기·배경색은 data/site.json의 "layout"(관리자 '섹션 순서·배경' 메뉴)
+# 맨 위(첫 화면·프로필)와 맨 아래(About·연락처)는 고정. 흰 배경 섹션끼리 붙으면 사이에 가는 구분선을 넣음.
+SECTION_BLOCKS={
+  "interview":lambda: f'''<section class="sec tight" id="interview"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["interview"]["en"])}</div><h2>{esc(S["interview"]["title"])}</h2><p>{S["interview"]["desc"]}</p></div>
+  <div class="chatbox reveal" id="chatbox" data-qa='{chat_qa_json}'>
+    <div class="chatview" id="chatview"></div>
+  </div>
+</div></section>''',
+  "products":lambda: f'''<section class="sec tight" id="products"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["products"]["en"])}</div><h2>{esc(S["products"]["title"])}</h2><p>{S["products"]["desc"]}</p></div>
+  <div class="prodgrid">{products_html}</div>
+</div></section>''',
+  "project":lambda: f'''<section class="sec" id="s06"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["project"]["en"])}</div><h2>{esc(S["project"]["title"])}</h2></div>
+  {proj_html}
+</div></section>''',
+  "ai":lambda: f'''<section class="sec tight" id="ai"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["ai"]["en"])}</div><h2>{esc(S["ai"]["title"])}</h2>
+    <div class="aitools">{spans(S["ai"]["tools"])}</div>
+    <p>{S["ai"]["desc"]}{hint(S["ai"])}</p>
+  </div>
+  <div class="airows">{ai_html}</div>
+</div></section>''',
+  "detail":lambda: f'''<section class="sec" id="s01"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["detail"]["en"])}</div><h2>{esc(S["detail"]["title"])}</h2><p>{detail_desc}</p></div>
+  <div class="dshots reveal">{detail_html}</div>
+  <div class="reveal">{dp_html}</div>
+</div></section>''',
+  "package":lambda: f'''<section class="sec" id="s02"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["package"]["en"])}</div><h2>{esc(S["package"]["title"])}</h2><p>{S["package"]["desc"]}</p>{contribs(S["package"]["badges"])}{hint(S["package"])}</div>
+  {viewer(package)}
+</div></section>''',
+  "editorial":lambda: f'''<section class="sec" id="s03"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["editorial"]["en"])}</div><h2>{esc(S["editorial"]["title"])}</h2><p>{S["editorial"]["desc"]}</p>{contribs(S["editorial"]["badges"])}{hint(S["editorial"])}</div>
+  {viewer(editorial)}
+</div></section>''',
+  "photo":lambda: f'''<section class="sec" id="s04"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["photo"]["en"])}</div><h2>{esc(S["photo"]["title"])}</h2><p>{S["photo"]["desc"]}</p>{contribs(S["photo"]["badges"])}{hint(S["photo"])}</div>
+  <div class="reveal">{tiles(photo,PHOTO_INITIAL)}</div>
+</div></section>''',
+  "career":lambda: f'''<section class="sec tight" id="career"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S["career"]["en"])}</div><h2>{esc(S["career"]["title"])}</h2>
+    <div class="cvmeta reveal">
+{career_badges}
+    </div>
+  </div>
+  <div class="cv reveal">{cv_html}</div>
+</div></section>''',
+}
+SECTION_NAMES={"interview":"인터뷰","products":"기획·출시 제품","project":"셀프 편집기 도입 프로젝트","ai":"AI 활용 작업물","detail":"상세페이지","package":"패키지","editorial":"편집디자인","photo":"사진 촬영","career":"경력"}
+LAYOUT_DEFAULT=[{"key":"interview","bg":"#FFFFFF"},{"key":"products","bg":"#FFFFFF"},{"key":"project","bg":"#E7F6F4"},{"key":"ai","bg":"#FFFFFF"},
+  {"key":"detail","bg":"#FFFFFF"},{"key":"package","bg":"#E7F6F4"},{"key":"editorial","bg":"#FFFFFF"},{"key":"photo","bg":"#E7F6F4"},{"key":"career","bg":"#FFFFFF"}]
+def section_layout():
+    lay=[x for x in (SITE.get("layout") or LAYOUT_DEFAULT) if isinstance(x,dict) and x.get("key") in SECTION_BLOCKS]
+    seen={x["key"] for x in lay}
+    lay+= [x for x in LAYOUT_DEFAULT if x["key"] not in seen]   # 새로 생긴 섹션은 맨 뒤에
+    return lay
+def _white(bg): return (bg or "").strip().upper() in ("","#FFFFFF","#FFF")
+def middle_sections():
+    HR='<div class="wrap"><div class="hr"></div></div>\n\n'
+    out="\n"+"";prev_white=True;first=True
+    for x in section_layout():
+        if x.get("hidden"): continue
+        bg=(x.get("bg") or "").strip()
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}",bg): bg="#FFFFFF"
+        white=_white(bg)
+        blk=SECTION_BLOCKS[x["key"]]()
+        if not white:
+            blk=blk.replace('<section class="sec','<section class="sec tinted',1).replace('"><div class="wrap">',f'" style="background:{bg}"><div class="wrap">',1)
+        if prev_white and white: out+=HR
+        out+=blk+"\n\n"; prev_white=white; first=False
+    if prev_white: out+=HR
+    return out
+
 html=f'''<!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(T["meta"]["title"])}</title>
@@ -440,71 +516,7 @@ html=f'''<!doctype html><html lang="ko"><head>
     </div>
   </div>
 </div></header>
-
-<div class="wrap"><div class="hr"></div></div>
-
-<section class="sec tight" id="interview"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["interview"]["en"])}</div><h2>{esc(S["interview"]["title"])}</h2><p>{S["interview"]["desc"]}</p></div>
-  <div class="chatbox reveal" id="chatbox" data-qa='{chat_qa_json}'>
-    <div class="chatview" id="chatview"></div>
-  </div>
-</div></section>
-
-<div class="wrap"><div class="hr"></div></div>
-
-<section class="sec tight" id="products"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["products"]["en"])}</div><h2>{esc(S["products"]["title"])}</h2><p>{S["products"]["desc"]}</p></div>
-  <div class="prodgrid">{products_html}</div>
-</div></section>
-
-<section class="sec" id="s06" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["project"]["en"])}</div><h2>{esc(S["project"]["title"])}</h2></div>
-  {proj_html}
-</div></section>
-
-<section class="sec tight" id="ai"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["ai"]["en"])}</div><h2>{esc(S["ai"]["title"])}</h2>
-    <div class="aitools">{spans(S["ai"]["tools"])}</div>
-    <p>{S["ai"]["desc"]}{hint(S["ai"])}</p>
-  </div>
-  <div class="airows">{ai_html}</div>
-</div></section>
-
-<div class="wrap"><div class="hr"></div></div>
-
-<section class="sec" id="s01"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["detail"]["en"])}</div><h2>{esc(S["detail"]["title"])}</h2><p>{detail_desc}</p></div>
-  <div class="dshots reveal">{detail_html}</div>
-  <div class="reveal">{dp_html}</div>
-</div></section>
-
-<section class="sec" id="s02" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["package"]["en"])}</div><h2>{esc(S["package"]["title"])}</h2><p>{S["package"]["desc"]}</p>{contribs(S["package"]["badges"])}{hint(S["package"])}</div>
-  {viewer(package)}
-</div></section>
-
-<section class="sec" id="s03"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["editorial"]["en"])}</div><h2>{esc(S["editorial"]["title"])}</h2><p>{S["editorial"]["desc"]}</p>{contribs(S["editorial"]["badges"])}{hint(S["editorial"])}</div>
-  {viewer(editorial)}
-</div></section>
-
-<section class="sec" id="s04" style="background:var(--paper-2)"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["photo"]["en"])}</div><h2>{esc(S["photo"]["title"])}</h2><p>{S["photo"]["desc"]}</p>{contribs(S["photo"]["badges"])}{hint(S["photo"])}</div>
-  <div class="reveal">{tiles(photo,PHOTO_INITIAL)}</div>
-</div></section>
-
-<section class="sec tight" id="career"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S["career"]["en"])}</div><h2>{esc(S["career"]["title"])}</h2>
-    <div class="cvmeta reveal">
-{career_badges}
-    </div>
-  </div>
-  <div class="cv reveal">{cv_html}</div>
-</div></section>
-
-<div class="wrap"><div class="hr"></div></div>
-
-<section class="sec about" id="about"><div class="wrap">
+{middle_sections()}<section class="sec about" id="about"><div class="wrap">
   <div class="about-head reveal">
     <div class="lead"><span class="hl">{esc(T["about"]["lead"])}</span></div>
   </div>

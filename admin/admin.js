@@ -351,6 +351,52 @@
     for (const p of S.products) if (!img(p.img)) miss.push("제품 '" + p.title + "' 이미지");
     return miss;
   }
+  // ── 섹션 순서·배경 ──────────────────────────────────
+  // data/site.json의 layout: [{key, bg, hidden}] — build.py가 이 순서·배경색대로 가운데 섹션을 만듦
+  const SECTION_NAMES = { interview: "인터뷰", products: "기획·출시 제품", project: "셀프 편집기 도입 프로젝트", ai: "AI 활용 작업물", detail: "상세페이지",
+    package: "패키지", editorial: "편집디자인", photo: "사진 촬영", career: "경력" };
+  const LAYOUT_DEFAULT = [["interview", "#FFFFFF"], ["products", "#FFFFFF"], ["project", "#E7F6F4"], ["ai", "#FFFFFF"], ["detail", "#FFFFFF"],
+    ["package", "#E7F6F4"], ["editorial", "#FFFFFF"], ["photo", "#E7F6F4"], ["career", "#FFFFFF"]];
+  const SWATCHES = [["흰색", "#FFFFFF"], ["민트", "#E7F6F4"], ["연회색", "#F4F6F6"], ["아이보리", "#FAF7F0"]];
+  const isWhite = bg => ["", "#FFFFFF", "#FFF"].includes(String(bg || "").trim().toUpperCase());
+  function ensureLayout() {
+    if (!Array.isArray(S.layout)) S.layout = LAYOUT_DEFAULT.map(([key, bg]) => ({ key, bg }));
+    for (const [key, bg] of LAYOUT_DEFAULT) if (!S.layout.some(x => x.key === key)) S.layout.push({ key, bg });
+    return S.layout;
+  }
+  function layoutPanel() {
+    const lay = ensureLayout();
+    const box = h("div");
+    const render = () => {
+      box.innerHTML = "";
+      const vis = lay.filter(x => !x.hidden);
+      const warn = vis.some((x, i) => i > 0 && !isWhite(x.bg) && String(x.bg).toUpperCase() === String(vis[i - 1].bg).toUpperCase());
+      box.append(
+        h("p", { class: "help" }, "가운데 섹션의 순서와 배경색을 정해요. 맨 위(첫 화면·프로필)와 맨 아래(About·연락처)는 고정이에요. 흰 배경 섹션끼리 붙으면 사이에 가는 구분선이 자동으로 들어가요."),
+        h("div", { class: "fixedrow" }, "맨 위 고정 · 첫 화면 + 프로필"),
+        ...(warn ? [h("div", { class: "lwarn" }, "같은 색 배경 섹션이 연달아 있어요. 경계가 안 보일 수 있으니 한쪽 색을 바꿔 보세요.")] : []));
+      const list = h("div", { class: "items" });
+      lay.forEach((x, i) => {
+        const g = grip(), hid = !!x.hidden;
+        const pick = h("input", { type: "color", title: "배경색 직접 고르기" }); pick.value = /^#[0-9a-f]{6}$/i.test(x.bg) ? x.bg : "#ffffff";
+        const txt = h("input", { type: "text", class: "bgtxt" }); txt.value = x.bg || "#FFFFFF";
+        const set = v => { x.bg = v.toUpperCase(); changed(); render(); };
+        pick.addEventListener("change", () => set(pick.value));
+        txt.addEventListener("change", () => { if (/^#[0-9a-f]{6}$/i.test(txt.value.trim())) set(txt.value.trim()); else { alert("#E7F6F4 처럼 # 뒤에 6자리로 적어 주세요."); txt.value = x.bg; } });
+        const sw = SWATCHES.map(([n, c]) => h("button", { type: "button", class: "swbtn" + (String(x.bg).toUpperCase() === c ? " on" : ""), title: n + " " + c, style: `background:${c}`, onclick: () => set(c) }));
+        const row = h("div", { class: "item lrow" + (hid ? " is-hidden" : ""), style: `background:${hid ? "" : (x.bg || "#fff")}` },
+          h("div", { class: "item-head" }, g, numBadge(lay, i, render), h("span", { class: "ttl" }, hid ? h("span", { class: "hidtag" }, "숨김") : null, (SEC()[x.key] && SEC()[x.key].title) || SECTION_NAMES[x.key] || x.key),
+            h("span", { class: "bgctl" }, ...sw, pick, txt), hideBtn(lay, i, render),
+            h("button", { class: "mini", title: "위로", onclick: () => { if (i > 0) { [lay[i - 1], lay[i]] = [lay[i], lay[i - 1]]; changed(); render(); } } }, "▲"),
+            h("button", { class: "mini", title: "아래로", onclick: () => { if (i < lay.length - 1) { [lay[i + 1], lay[i]] = [lay[i], lay[i + 1]]; changed(); render(); } } }, "▼")));
+        dragSort(row, lay, i, render, g); list.append(row);
+      });
+      box.append(list, h("div", { class: "fixedrow" }, "맨 아래 고정 · About + 연락처"),
+        h("p", { class: "note" }, "배경은 글자가 잘 읽히도록 밝은 색을 추천해요. 섹션을 숨기면 사이트에서만 안 보이고 내용은 그대로 남아요. 상단 메뉴의 'Work'는 상세페이지 섹션으로 이동해요."));
+    };
+    render(); return box;
+  }
+
   // ── 사용법(5단계 사용 설명서) ─────────────────────────
   // 내용은 글자만 있는 고정 안내문. 바꿀 때는 아래 MANUAL 배열만 고치면 됨.
   const MANUAL = [
@@ -367,6 +413,10 @@
       <p>칸에 바로 입력하면 돼요. 소개 글 같은 긴 칸에서는 이렇게 쓸 수 있어요.</p>
       <ul><li>굵게: <code>&lt;b&gt;굵게 할 글자&lt;/b&gt;</code></li><li>줄바꿈: 줄을 바꿀 곳에 <code>&lt;br&gt;</code></li></ul>
       <p>섹션 제목·소개·배지는 <b>섹션 제목·소개</b> 메뉴, 이름·연락처·첫 화면 문구는 <b>기본 정보</b> 메뉴에 있어요.</p>`],
+    ["섹션 순서·배경색", `
+      <p><b>섹션 순서·배경</b> 메뉴에서 인터뷰~경력 섹션의 <b>순서</b>(끌기·번호), <b>숨기기</b>, <b>배경색</b>을 바꿀 수 있어요. 맨 위(첫 화면·프로필)와 맨 아래(About·연락처)는 고정이에요.</p>
+      <ul><li>배경색: 동그라미(흰색·민트·연회색·아이보리)를 누르거나, 색 칸에서 직접 고르거나, <code>#E7F6F4</code>처럼 입력</li>
+      <li>같은 색 배경이 연달아 붙으면 경고가 떠요. 흰 배경끼리는 사이에 가는 선이 자동으로 들어가요.</li></ul>`],
     ["순서 바꾸기", `
       <ul><li><b>끌어서 옮기기</b>: 왼쪽 <b>⠿</b>를 잡고 원하는 자리로 끌기 (이미지 목록은 이미지를 잡고 끌기). 민트색 선이 놓일 자리예요.</li>
       <li><b>번호로 옮기기</b>: 번호(1, 2, 3…)를 누르고 원하는 번호 입력 → 멀리 옮길 때 편해요. <b>휴대폰에서는 이 방법</b>을 쓰세요.</li>
@@ -495,6 +545,7 @@
   // ── 메뉴(탭)별 화면 ──────────────────────────────────
   const T = () => S.texts, SEC = () => S.texts.sections;
   const TABS = {
+    layout: ["섹션 순서·배경", () => [layoutPanel()]],
     basic: ["기본 정보", () => [
       group("연락처 (프로필·푸터에 함께 쓰여요)", field("이름", T().contact, "name"), field("영문 이름(상단 메뉴)", T().contact, "name_en"),
         field("전화번호", T().contact, "phone"), field("이메일", T().contact, "email")),
@@ -527,7 +578,7 @@
           field("실제 제품 링크", x, "url", { type: "url", note: "비워 두면 링크가 표시되지 않아요." }), imgRow("제품 이미지", () => img(x.img), async f => IMG.product(f, x.img))),
         add: () => ({ img: nextName("prod", S.products.map(p => p.img)), title: "새 제품", achieve: "", concept: "", url: "" }), addLabel: "+ 제품 추가" }),
     ]],
-    project: ["셀프 디자인 프로젝트", () => {
+    project: ["대표 프로젝트", () => {
       const p = S.project;
       return [group("", field("제목", p, "title"), field("소개", p, "lead", { type: "textarea", rows: 5 }), field("역할 배지", p, "roles"),
         strList("사실 배지", p, "stats"), strList("진행 과정", p, "steps", { textarea: true }), strList("기존 문제", p, "problem", { textarea: true }), strList("개선 결과", p, "solution", { textarea: true }))];
@@ -623,7 +674,7 @@
   }
   async function load() {
     const [c, m] = await Promise.all([api("content"), fetch("manifest.json").then(r => r.ok ? r.json() : { assets: [] }).catch(() => ({ assets: [] }))]);
-    S = c.site; D = c.details; SHA = c.sha; ASSETS = m.assets || []; DETAIL_DIRS = m.detail_dirs || []; ORIGINAL = snapshot();
+    S = c.site; D = c.details; SHA = c.sha; ASSETS = m.assets || []; DETAIL_DIRS = m.detail_dirs || []; ensureLayout(); ORIGINAL = snapshot();
     showRepo(c.repoMB);
     $("#branch").textContent = c.sha === "local" ? "내 컴퓨터 시험" : c.branch === "main" ? "실제 사이트" : "작업 공간: " + c.branch;
     $("#login").hidden = true; $("#app").hidden = false; renderTabs(); renderPanel(); changed();

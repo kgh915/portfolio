@@ -143,3 +143,12 @@ input,textarea,select{font:inherit;color:inherit}
 .mbody .hid{font-size:11px;font-weight:700;color:#fff;background:var(--soft);border-radius:5px;padding:1px 6px}
 .tabsep{border:0;border-top:1px solid var(--line);margin:8px 6px}
 @media(max-width:760px){.tabsep{display:none}}
+/* 섹션 순서·배경 */
+.fixedrow{font-size:12px;color:var(--soft);border:1px dashed var(--line);border-radius:10px;padding:9px 14px;margin:8px 0;background:#fafcfc}
+.lrow .item-head{margin-bottom:0;flex-wrap:wrap}
+.bgctl{display:flex;align-items:center;gap:5px}
+.swbtn{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.18);padding:0}
+.swbtn.on{outline:2px solid var(--accent);outline-offset:1px}
+.bgctl input[type=color]{width:28px;height:26px;border:1px solid var(--line);border-radius:6px;padding:0;background:#fff}
+.bgtxt{width:82px;border:1px solid var(--line);border-radius:7px;padding:4px 6px;font-size:12px}
+.lwarn{font-size:13px;color:#fff;background:var(--warn);border-radius:8px;padding:8px 12px;margin:8px 0}

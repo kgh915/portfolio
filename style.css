@@ -157,7 +157,7 @@ img{display:block;max-width:100%}
 .contrib{display:inline-flex;align-items:center;margin-top:14px;font-size:12.5px;font-weight:700;color:var(--accent-deep);background:var(--paper-2);border-radius:8px;padding:5px 12px;letter-spacing:.01em}
 .sec-head .contrib+.contrib{margin-left:8px}
 /* 민트 배경 섹션(패키지·사진촬영)에서는 배지 배경이 섹션 배경과 같아 안 보이므로 흰 배경+테두리로 구분 */
-#s02 .contrib,#s03 .contrib,#s04 .contrib{background:var(--paper);border:1px solid var(--accent)}
+#s02 .contrib,#s03 .contrib,#s04 .contrib,.sec.tinted .contrib{background:var(--paper);border:1px solid var(--accent)}
 
 /* 01 detail mockup showcase (단일 컬럼 · 크게 · 넉넉한 여백) */
 .dshots{display:flex;flex-direction:column;gap:72px}
