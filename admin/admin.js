@@ -351,6 +351,77 @@
     for (const p of S.products) if (!img(p.img)) miss.push("제품 '" + p.title + "' 이미지");
     return miss;
   }
+  // ── 사용법(5단계 사용 설명서) ─────────────────────────
+  // 내용은 글자만 있는 고정 안내문. 바꿀 때는 아래 MANUAL 배열만 고치면 됨.
+  const MANUAL = [
+    ["처음 시작", `
+      <p><b>관리자 주소</b>: 사이트 주소 뒤에 <code>/admin/</code>을 붙이면 돼요. (실제 사이트에 합친 뒤: <code>kimgeunha.vercel.app/admin/</code>)</p>
+      <p>크롬·사파리·엣지 등 <b>어떤 브라우저든</b>, 휴대폰에서도 열려요. GitHub이나 Vercel에 로그인할 필요 없이 <b>관리자 비밀번호</b>만 있으면 돼요.</p>
+      <p>한 번 로그인하면 <b>12시간</b> 동안 유지돼요. 다른 사람 컴퓨터에서 썼다면 오른쪽 위 <b>로그아웃</b>을 눌러 주세요.</p>`],
+    ["기본 사용 순서", `
+      <ol><li>왼쪽 메뉴에서 고칠 곳을 고르기</li><li>글자를 고치거나 이미지를 올리기 — 고친 칸은 <span class="mk">노란색</span>으로 표시돼요</li>
+      <li>오른쪽 위 <b>저장</b> 누르기</li><li><b>약 1분 뒤</b> 사이트에 반영 — <b>사이트 보기 ↗</b>로 확인(안 바뀌었으면 새로고침)</li></ol>
+      <p>저장하지 않고 창을 닫으려고 하면 경고가 떠요. 저장 전이라면 <b>새로고침</b>으로 고친 내용을 모두 취소할 수 있어요.</p>
+      <p>여러 메뉴를 고친 뒤 한 번에 저장해도 돼요.</p>`],
+    ["글자 고치기", `
+      <p>칸에 바로 입력하면 돼요. 소개 글 같은 긴 칸에서는 이렇게 쓸 수 있어요.</p>
+      <ul><li>굵게: <code>&lt;b&gt;굵게 할 글자&lt;/b&gt;</code></li><li>줄바꿈: 줄을 바꿀 곳에 <code>&lt;br&gt;</code></li></ul>
+      <p>섹션 제목·소개·배지는 <b>섹션 제목·소개</b> 메뉴, 이름·연락처·첫 화면 문구는 <b>기본 정보</b> 메뉴에 있어요.</p>`],
+    ["순서 바꾸기", `
+      <ul><li><b>끌어서 옮기기</b>: 왼쪽 <b>⠿</b>를 잡고 원하는 자리로 끌기 (이미지 목록은 이미지를 잡고 끌기). 민트색 선이 놓일 자리예요.</li>
+      <li><b>번호로 옮기기</b>: 번호(1, 2, 3…)를 누르고 원하는 번호 입력 → 멀리 옮길 때 편해요. <b>휴대폰에서는 이 방법</b>을 쓰세요.</li>
+      <li>▲▼ 버튼은 한 칸씩 옮겨요.</li></ul>`],
+    ["숨기기와 삭제", `
+      <ul><li><b>숨기기</b>: 사이트에서만 안 보이고 자료는 그대로 남아요. 회색 점선 + <span class="hid">숨김</span> 표시. 다시 <b>보이기</b>를 누르면 원래 자리에 나타나요.</li>
+      <li><b>삭제</b>: 목록에서 완전히 빼요. <b>정말 필요 없을 때만</b> 쓰세요. 잘 모르겠으면 숨기기를 쓰세요.</li></ul>
+      <p>둘 다 <b>저장</b>을 눌러야 사이트에 반영돼요.</p>`],
+    ["이미지 올리기·교체", `
+      <p>원본 이미지를 그대로 골라도 <b>사이트에 맞는 크기로 자동으로 줄여서</b> 올려요(화질은 그대로, 사이트도 느려지지 않아요).</p>
+      <ul><li><b>사진 촬영·패키지·편집디자인</b>: <b>+ 이미지 추가</b>(여러 장 한 번에), 이미지마다 <b>이미지 교체</b>. 배경이 투명한(누끼) PNG는 투명 그대로 올라가요.</li>
+      <li><b>기획·출시 제품</b>: 제품을 열고 <b>이미지 교체</b>, 새 제품은 <b>+ 제품 추가</b></li>
+      <li><b>AI 활용 작업물</b>: 작업을 열고 콘셉트 이미지 추가·교체</li>
+      <li><b>상세페이지</b>: 아래 '새 상세페이지 추가' 참고</li></ul>
+      <p>올린 이미지도 <b>저장</b>을 눌러야 사이트에 반영돼요. 올리는 중에는 저장 버튼이 잠깐 꺼져요.</p>`],
+    ["새 상세페이지 추가", `
+      <ol><li><b>상세페이지</b> 메뉴 맨 아래 <b>+ 상세페이지 추가</b></li>
+      <li><b>상세 이미지 올리기</b> → 상세페이지 원본 선택(여러 장이면 파일 이름 순서대로 이어져요). 가로 860px로 줄이고 세로 4000px씩 잘라서 올려요.</li>
+      <li><b>미리보기는 자동</b>으로 상세 이미지 맨 윗부분으로 만들어져요. 다른 이미지를 쓰고 싶을 때만 <b>직접 올리기</b></li>
+      <li>작업명·기여도·사용툴·컬러무드·기획 컨셉 입력</li>
+      <li>새 항목은 맨 뒤에 생기니, 번호를 눌러 원하는 자리로 옮기고 <b>저장</b></li></ol>`],
+    ["영상(mp4) 올리기", `
+      <p>영상은 용량이 커서 관리자 화면에서 올릴 수 없어요. 30MB가 넘으면 먼저 <b>HandBrake</b>(무료 프로그램)로 'Fast 1080p30' 설정으로 줄이세요.</p>
+      <ol><li>github.com/kgh915/portfolio 접속 → <b>assets</b> 폴더</li><li><b>Add file → Upload files</b> → 영상 끌어다 놓기</li>
+      <li>이름은 이미지와 맞추기(예: 패키지 pk08의 영상이면 <code>pk08-1.mp4</code>)</li><li><b>Commit changes</b></li></ol>
+      <p>어려우면 Claude에게 영상 파일을 알려 주세요.</p>`],
+    ["통계 보기", `
+      <ul><li><b>📊 통계</b> 메뉴: 방문 수, 연락처(이메일·전화) 클릭, 많이 본 작업 순위, 들어온 곳(사람인·잡코리아 등)</li>
+      <li><b>내 방문 빼기</b>: 쓰는 브라우저마다(맥 크롬·사파리, 휴대폰 등) 통계 메뉴에서 <b>이 브라우저는 통계에서 제외하기</b>를 한 번 눌러 두세요.</li>
+      <li><b>주간 메일</b>: 매주 월요일 오전 8~9시에 지난주 요약이 메일로 와요. 안 보이면 스팸함도 확인(보내는 사람 onboarding@resend.dev).</li></ul>`],
+    ["문제가 생겼을 때", `
+      <ul><li><b>저장 전</b>에 잘못 고쳤다 → 새로고침하면 처음 상태로 돌아가요.</li>
+      <li><b>저장 후</b>에 되돌리고 싶다 → Claude에게 "어제 저장하기 전으로 되돌려줘"처럼 말하면 돼요. 저장할 때마다 기록이 남아서 언제든 되돌릴 수 있어요.</li>
+      <li><b>"다른 곳에서 먼저 저장된 내용이 있어요"</b> → 다른 창(또는 휴대폰)에서 먼저 저장한 경우예요. 새로고침한 뒤 다시 고쳐 주세요.</li>
+      <li><b>"저장하지 못했어요. GitHub 401…"</b> → GitHub 열쇠(토큰)가 만료된 거예요. 아래 '비밀번호·열쇠 바꾸기' 참고.</li>
+      <li><b>"로그인이 필요해요"</b> → 12시간이 지나 로그아웃된 거예요. 다시 로그인하세요(고친 내용은 저장 전이면 사라져요).</li></ul>`],
+    ["비밀번호·열쇠 바꾸기", `
+      <p>Vercel → 프로젝트 <b>portfolio</b> → <b>Environment Variables</b>(주소: vercel.com/kgh915/portfolio/settings/environment-variables)</p>
+      <ul><li><b>관리자 비밀번호</b>: <code>ADMIN_PASSWORD</code> → <b>Edit</b> → 새 비밀번호 → Save</li>
+      <li><b>GitHub 열쇠</b>: github.com/settings/personal-access-tokens 에서 새로 만들고(kgh915/portfolio만, Contents 읽기·쓰기) <code>GITHUB_TOKEN</code> 값을 바꾸기</li></ul>
+      <p>바꾼 뒤에는 Vercel <b>Deployments</b> 화면 맨 위 배포의 <b>⋯ → Redeploy</b>를 눌러야 적용돼요(또는 Claude에게 "다시 배포해줘").</p>`],
+    ["용량과 무료 한도", `
+      <ul><li><b>저장소 용량</b>: 화면 오른쪽 위에 표시돼요. GitHub 권장 1GB 이하, 800MB가 넘으면 주황색으로 바뀌어요. 지운 이미지도 기록으로 남아서 용량이 줄지는 않아요.</li>
+      <li><b>무료 한도</b>(모두 넉넉해요): Vercel 무료 플랜 / Upstash 월 50만 회 / Resend 월 3,000통(주 1통 사용)</li></ul>`],
+  ];
+  function manualPanel() {
+    const wrap = h("div", { class: "manual" }, h("p", { class: "help" }, "관리자 화면 쓰는 방법이에요. 궁금한 항목을 눌러 펼쳐 보세요."));
+    MANUAL.forEach(([title, body], i) => {
+      const d = h("details", { class: "group" }); if (i < 2) d.open = true;
+      const sm = h("summary", {}, title); const bd = h("div", { class: "mbody" }); bd.innerHTML = body;
+      d.append(sm, bd); wrap.append(d);
+    });
+    return wrap;
+  }
+
   // ── 통계 ───────────────────────────────────────────
   function itemName(k) {
     if (k === "mail") return "✉️ 이메일 클릭"; if (k === "tel") return "📞 전화번호 클릭"; if (k === "more") return "더보기 버튼";
@@ -517,6 +588,7 @@
           field("직무·직급", x, "role"), field("주요 업무", x, "desc", { type: "textarea", rows: 2 })) }),
     ]],
     stats: ["📊 통계", () => [statsPanel()]],
+    manual: ["📖 사용법", () => [manualPanel()]],
     about: ["About·푸터", () => [
       group("About", field("큰 제목", T().about, "lead"), strList("문단", T().about, "paragraphs", { textarea: true, note: HTML_NOTE })),
       group("푸터", field("큰 문구", T().footer, "big", { type: "textarea", rows: 2, note: "줄바꿈은 <br>" }), field("직함", T().footer, "role"), field("저작권 문구", T().footer, "copy")),
@@ -525,8 +597,10 @@
 
   function renderTabs() {
     const nav = $("#tabs"); nav.innerHTML = "";
-    for (const [k, [name]] of Object.entries(TABS))
-      nav.append(h("button", { class: k === TAB ? "on" : "", onclick: () => { TAB = k; renderTabs(); renderPanel(); scrollTo(0, 0); } }, name));
+    const keys = Object.keys(TABS).filter(k => k !== "stats" && k !== "manual").concat(["stats", "manual"]);  // 통계·사용법은 맨 아래
+    for (const k of keys) { const [name] = TABS[k];
+      if (k === "stats") nav.append(h("hr", { class: "tabsep" }));
+      nav.append(h("button", { class: k === TAB ? "on" : "", onclick: () => { TAB = k; renderTabs(); renderPanel(); scrollTo(0, 0); } }, name)); }
   }
   function renderPanel() {
     const [name, fn] = TABS[TAB]; const p = $("#panel"); p.innerHTML = "";

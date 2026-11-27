@@ -131,3 +131,15 @@ input,textarea,select{font:inherit;color:inherit}
 .rank img,.rank .noimg{width:34px;height:34px;object-fit:cover;object-position:top;border-radius:5px;border:1px solid var(--line);background:#fafafa}
 .rank .ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:760px){.kpis{grid-template-columns:1fr}}
+/* 사용법 */
+.manual details>summary{cursor:pointer;font-weight:700;font-size:15px;list-style:none;display:flex;justify-content:space-between}
+.manual details>summary::after{content:"+";color:var(--accent-deep)}
+.manual details[open]>summary::after{content:"−"}
+.manual details[open]>summary{margin-bottom:10px}
+.mbody{display:grid;gap:8px;color:#2b403d}
+.mbody ul,.mbody ol{padding-left:20px;display:grid;gap:5px}
+.mbody code{background:var(--mint);color:var(--accent-deep);border-radius:4px;padding:1px 5px;font-size:13px}
+.mbody .mk{background:#FFFBEA;border:1px solid #f0e3a6;border-radius:4px;padding:0 4px}
+.mbody .hid{font-size:11px;font-weight:700;color:#fff;background:var(--soft);border-radius:5px;padding:1px 6px}
+.tabsep{border:0;border-top:1px solid var(--line);margin:8px 6px}
+@media(max-width:760px){.tabsep{display:none}}
