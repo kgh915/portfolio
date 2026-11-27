@@ -366,6 +366,9 @@ document.querySelectorAll('.moregroup').forEach(g=>{
         const p=document.createElement('p');p.textContent=n.concept;box.appendChild(p);}
     }
     scroller.scrollTop=0;
+    // 다음·이전 상세페이지 첫 장을 미리 받아 두기(지금 보는 첫 장이 다 뜬 뒤) → 다음 버튼을 누르면 바로 보임
+    const first=body.querySelector('img'),pre=()=>[cur+1,cur-1].forEach(j=>{const c=cards[(j+cards.length)%cards.length];try{const p=JSON.parse(c.dataset.pages);p.slice(0,2).forEach(x=>{new Image().src=x[0];});}catch(e){}});
+    if(first&&!first.complete)first.addEventListener('load',pre,{once:true});else pre();
   }
   function open(i){pop.classList.add('on');document.body.style.overflow='hidden';show(i);scroller.scrollTop=0;}
   function close(){pop.classList.remove('on');document.body.style.overflow='';body.innerHTML='';}
@@ -702,7 +705,10 @@ function show(i){{gi=(i+gallery.length)%gallery.length;const it=gallery[gi];lb.c
     lbvid.muted=it.muted!==false;lbvid.loop=it.loop!==false;lbvid.hidden=false;
     if(it.autoplay===false){{lbvid.pause();lbPlay.hidden=false;}}else{{lbvid.play().catch(()=>{{}});lbPlay.hidden=true;}}
     lbcap.textContent=it.cap||'AI를 이용하여 제작된 3D 목업 영상입니다';lb.classList.remove('cut');}}
-  else{{lbvid.pause();lbvid.hidden=true;lbvid.removeAttribute('src');lbimg.src=it.src;lbimg.hidden=false;lb.classList.toggle('cut',!!it.cut);lbPlay.hidden=true;}}}}
+  else{{lbvid.pause();lbvid.hidden=true;lbvid.removeAttribute('src');lbimg.src=it.src;lbimg.hidden=false;lb.classList.toggle('cut',!!it.cut);lbPlay.hidden=true;}}
+  // 다음·이전 이미지를 미리 받아 두기(지금 이미지가 다 뜬 뒤) → 넘길 때 바로 보임
+  if(gallery.length>1){{const pre=()=>[gi+1,gi-1].forEach(j=>{{const n=gallery[(j+gallery.length)%gallery.length];if(n&&n.kind!=='video')new Image().src=n.src;}});
+    if(it.kind!=='video'&&!lbimg.complete)lbimg.addEventListener('load',pre,{{once:true}});else pre();}}}}
 lbPlay.addEventListener('click',e=>{{e.stopPropagation();lbvid.play().catch(()=>{{}});lbPlay.hidden=true;}});
 function openLb(list,idx){{gallery=list;lb.classList.toggle('nav',list.length>1);show(idx);lb.classList.add('on');document.body.style.overflow='hidden';}}
 const handled=new Set();
