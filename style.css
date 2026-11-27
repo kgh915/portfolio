@@ -446,5 +446,5 @@ img{display:block;max-width:100%}
 .vnote p{margin-top:6px;font-size:15px;line-height:1.75;color:var(--ink-soft)}
 @media(max-width:560px){.vnote{padding:22px 20px}.vnote h3{font-size:18px}.vnote p{font-size:14px}}
 /* 섹션 제목 색: 굵고 큰 제목이 너무 검어 답답해 보인다는 피드백 → 진한 회색(민트 기운 살짝). 첫 화면 제목은 원래 색 유지 */
-:root{--title:#505B59}
+:root{--title:#475351}
 .sec-head h2{color:var(--title)}
