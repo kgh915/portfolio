@@ -63,7 +63,10 @@ async function gh(pathname, opts = {}) {
   if (opts.raw) return r.text();  // 파일 내용 그대로(글자)로 받기
   return r.headers.get("content-type")?.includes("json") ? r.json() : r.text();
 }
-async function headSha() { return (await gh("/git/ref/heads/" + encodeURIComponent(BRANCH))).object.sha; }
+// 브랜치 최신 버전 — 캐시된 옛 값을 받지 않도록 매번 다른 주소로 요청
+async function headSha() { return (await gh("/git/ref/heads/" + encodeURIComponent(BRANCH) + "?t=" + Date.now(), { headers: { "Cache-Control": "no-cache" } })).object.sha; }
+// 관리자 화면이 고치는 데이터 파일 — 이 파일들이 그사이 바뀌었을 때만 '충돌'로 봄
+const DATA_FILES = ["data/site.json", "assets/detail/details.json"];
 async function readFile(p, ref) {
   if (LOCAL) return fs.readFileSync(path.join(ROOT, p), "utf8");
   return gh("/contents/" + p + "?ref=" + ref, { raw: true, headers: { Accept: "application/vnd.github.raw+json" } });
@@ -97,23 +100,38 @@ async function commitFiles(files, message, expectSha) {
     require("child_process").execSync("python3 build.py", { cwd: ROOT });
     return "local";
   }
-  const head = await headSha();
-  if (expectSha && head !== expectSha) {
-    const e = new Error("다른 곳에서 먼저 저장된 내용이 있어요. 새로고침한 뒤 다시 수정해 주세요."); e.conflict = true; throw e;
-  }
-  const baseTree = (await gh("/git/commits/" + head)).tree.sha;
-  const tree = [];
+  // 파일 조각(blob)은 한 번만 만들어 두고, 커밋은 최신 버전 위에 올림
+  const entries = [];
   for (const f of files) {
-    if (f.remove) { tree.push({ path: f.path, mode: "100644", type: "blob", sha: null }); continue; }
-    if (f.sha) { tree.push({ path: f.path, mode: "100644", type: "blob", sha: f.sha }); continue; }
+    if (f.remove) { entries.push({ path: f.path, mode: "100644", type: "blob", sha: null }); continue; }
+    if (f.sha) { entries.push({ path: f.path, mode: "100644", type: "blob", sha: f.sha }); continue; }
     const blob = await gh("/git/blobs", { method: "POST", body: JSON.stringify(
       f.base64 ? { content: f.base64, encoding: "base64" } : { content: f.content, encoding: "utf-8" }) });
-    tree.push({ path: f.path, mode: "100644", type: "blob", sha: blob.sha });
+    entries.push({ path: f.path, mode: "100644", type: "blob", sha: blob.sha });
   }
-  const t = await gh("/git/trees", { method: "POST", body: JSON.stringify({ base_tree: baseTree, tree }) });
-  const c = await gh("/git/commits", { method: "POST", body: JSON.stringify({ message, tree: t.sha, parents: [head] }) });
-  await gh("/git/refs/heads/" + encodeURIComponent(BRANCH), { method: "PATCH", body: JSON.stringify({ sha: c.sha }) });
-  return c.sha;
+  // 그사이 다른 저장(예: Claude의 작업 기록 커밋)이 있어도, 관리자 데이터 파일이 안 바뀌었으면 그대로 그 위에 저장.
+  // 데이터 파일이 바뀌었을 때만 '충돌' 안내. 저장 순간 최신 버전이 또 바뀌면(422) 최대 3번 다시 시도.
+  for (let attempt = 1; ; attempt++) {
+    const head = await headSha();
+    if (expectSha && head !== expectSha) {
+      let touched = true;
+      try {
+        const cmp = await gh("/compare/" + expectSha + "..." + head);
+        touched = cmp.status !== "ahead" || (cmp.files || []).some(x => DATA_FILES.includes(x.filename)) || (cmp.files || []).length >= 300;
+      } catch (e) { touched = true; }
+      if (touched) { const e = new Error("다른 곳에서 먼저 저장된 내용이 있어요. 새로고침한 뒤 다시 수정해 주세요."); e.conflict = true; throw e; }
+    }
+    const baseTree = (await gh("/git/commits/" + head)).tree.sha;
+    const t = await gh("/git/trees", { method: "POST", body: JSON.stringify({ base_tree: baseTree, tree: entries }) });
+    const c = await gh("/git/commits", { method: "POST", body: JSON.stringify({ message, tree: t.sha, parents: [head] }) });
+    try {
+      await gh("/git/refs/heads/" + encodeURIComponent(BRANCH), { method: "PATCH", body: JSON.stringify({ sha: c.sha }) });
+      return c.sha;
+    } catch (e) {
+      if (attempt >= 3 || !/GitHub 422/.test(e.message)) throw e;
+      await new Promise(r => setTimeout(r, 800 * attempt));
+    }
+  }
 }
 async function readBody(req) {
   if (req.body !== undefined) return typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;
