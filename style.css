@@ -362,7 +362,8 @@ img{display:block;max-width:100%}
 
 /* 상세페이지 미리보기 목록 (ds02~05 4열 통이미지를 개별 카드로 교체) */
 .dshots+.reveal{margin-top:72px}
-.dpgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px}
+.dpgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:26px}
+@media(max-width:1100px){.dpgrid{grid-template-columns:repeat(4,1fr);gap:24px}}
 .dpcard{position:relative;display:block;padding:0;border:0;background:#fff;aspect-ratio:307/787;overflow:hidden;border-radius:10px;box-shadow:var(--shadow);font:inherit}
 .dpcard img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
 .dpcard[data-pages]{cursor:pointer}
