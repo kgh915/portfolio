@@ -281,7 +281,7 @@ img{display:block;max-width:100%}
 .cvmeta span{font-size:12.5px;font-weight:700;background:none;border:1px solid var(--accent);color:var(--accent-deep);border-radius:8px;padding:4px 11px}
 
 /* 카테고리 구분 가로 라인 */
-.hr{height:1px;background:var(--line-strong)}
+.hr{height:1px;background:var(--line);transform:scaleY(.5);transform-origin:top}
 
 /* 동일 사이즈 썸네일(흰 배경 · 누끼 이미지용) */
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
