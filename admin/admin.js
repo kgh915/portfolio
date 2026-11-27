@@ -207,11 +207,17 @@
   };
   // 상세페이지: 미리보기(가로 500) / 상세 이미지(가로 최대 860, 세로 4000px씩 잘라 01.jpg, 02.jpg …)
   async function detailPreview(x, f) { const im = await loadImage(f); const p = `detail/${x.id}/preview.jpg`; await put(p, await shrink(im, { maxW: 500 })); x.preview = p; }
-  async function detailPages(x, files, step) {
+  // 상세 이미지 첫 장의 맨 윗부분을 목록 칸 비율(307:787)로 잘라 미리보기로 만듦(가로 500)
+  async function autoPreview(x, im) {
+    const W = im.naturalWidth, sh = Math.min(im.naturalHeight, Math.round(W * 787 / 307));
+    const p = `detail/${x.id}/preview.jpg`; await put(p, await shrink(im, { maxW: 500, sy: 0, sh })); x.preview = p;
+  }
+  async function detailPages(x, files, step, makePreview) {
     files = [...files].sort((a, b) => a.name.localeCompare(b.name, "ko", { numeric: true }));
     const old = (x.pages || []).map(p => "assets/" + p.src), pages = []; let n = 0;
     for (const [fi, f] of files.entries()) {
       const im = await loadImage(f); const W = im.naturalWidth, H = im.naturalHeight, k = Math.min(1, 860 / W), seg = Math.round(4000 / k);
+      if (fi === 0 && makePreview) { step("(미리보기 만드는 중)"); await autoPreview(x, im); }
       for (let y = 0; y < H; y += seg) {
         n++; step(`(${fi + 1}/${files.length}번째 파일, ${n}조각)`);
         const src = `detail/${x.id}/${String(n).padStart(2, "0")}.jpg`; const out = await put(src, await shrink(im, { maxW: 860, sy: y, sh: Math.min(seg, H - y) }));
@@ -326,10 +332,10 @@
     render(); return box;
   }
   // 이미지 한 장 칸(미리보기 + 교체 버튼)
-  function imgRow(label, src, doUpload, after, note) {
+  function imgRow(label, src, doUpload, after, note, btnLabel) {
     const pic = h("img", { class: "rowimg", src: src() || "", alt: "" });
     return h("div", { class: "field" }, h("label", {}, label), note ? h("div", { class: "note" }, note) : null,
-      h("div", { class: "imgrow" }, pic, upBtn(src() ? "이미지 교체" : "이미지 올리기", async () => {
+      h("div", { class: "imgrow" }, pic, upBtn(btnLabel || (src() ? "이미지 교체" : "이미지 올리기"), async () => {
         const [f] = filesOnly(await pickFiles(false)); if (!f) return;
         if (await work("이미지 올리는 중", () => doUpload(f))) { pic.src = src(); changed(); after && after(); }
       })));
@@ -341,7 +347,7 @@
   // 저장 전 확인: 이미지가 없는 새 항목
   function missingImages() {
     const miss = [];
-    for (const d of D) if (!d.preview) miss.push("상세페이지 '" + d.title + "' 미리보기 이미지");
+    for (const d of D) if (!d.preview) miss.push("상세페이지 '" + d.title + "' 이미지(상세 이미지를 올리면 미리보기도 자동으로 생겨요)");
     for (const p of S.products) if (!img(p.img)) miss.push("제품 '" + p.title + "' 이미지");
     return miss;
   }
@@ -403,13 +409,15 @@
         render: (x, b) => {
           b.append(field("작업명", x, "title"));
           const reList = () => { const w = b.closest(".items"); w && w.rerender ? w.rerender() : renderPanel(); };
-          b.append(imgRow("미리보기 이미지", () => img(x.preview), async f => detailPreview(x, f), reList, "목록에 보이는 이미지예요. 가로 500px로 줄여서 올려요."));
           b.append(h("div", { class: "field" }, h("label", {}, "상세 이미지 (" + (x.pages?.length ? x.pages.length + "조각" : "없음") + ")"),
             h("div", { class: "note" }, "상세페이지 전체 이미지를 골라 주세요(여러 장이면 파일 이름 순서대로 이어져요). 가로 860px로 줄이고 세로 4000px씩 잘라서 올려요. 다시 올리면 기존 상세 이미지를 모두 바꿔요."),
             h("div", {}, upBtn(x.pages?.length ? "상세 이미지 다시 올리기" : "상세 이미지 올리기", async () => {
               const fs = filesOnly(await pickFiles(true)); if (!fs.length) return;
-              if (await work("상세 이미지 올리는 중", step => detailPages(x, fs, step))) { changed(); reList(); }
+              const mk = !x.preview || confirm("미리보기 이미지도 새 상세 이미지의 맨 윗부분으로 바꿀까요?\n\n확인: 자동으로 바꾸기 / 취소: 지금 미리보기 그대로 두기");
+              if (await work("상세 이미지 올리는 중", step => detailPages(x, fs, step, mk))) { changed(); reList(); }
             }))));
+          b.append(imgRow("미리보기 이미지", () => img(x.preview), async f => detailPreview(x, f), reList,
+            "상세 이미지를 올리면 첫 장의 맨 윗부분으로 자동으로 만들어져요. 다른 이미지로 쓰고 싶을 때만 직접 올리세요(상세 이미지가 없는 '미리보기만' 작업도 여기서 올려요).", "직접 올리기"));
           if (!x.pages?.length) return;
           const cs = x.contrib || (x.contrib = []);
           b.append(h("div", { class: "field" }, h("label", {}, "기여도"), h("div", { class: "note" }, "100%인 역할은 사이트에서 '기획·디자인 100%'처럼 자동으로 합쳐져요. %가 아닌 경우(업체제공 등)는 % 칸을 비우고 표시 문구를 쓰세요."),
