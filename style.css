@@ -445,3 +445,6 @@ img{display:block;max-width:100%}
 .vnote>.dplabel{margin-top:18px}
 .vnote p{margin-top:6px;font-size:15px;line-height:1.75;color:var(--ink-soft)}
 @media(max-width:560px){.vnote{padding:22px 20px}.vnote h3{font-size:18px}.vnote p{font-size:14px}}
+/* 큰 제목 색: 굵고 큰 제목이 너무 검어 답답해 보인다는 피드백 → 본문보다 한 톤 밝은 진한 회색(민트 기운 살짝) */
+:root{--title:#3E4A48}
+.sec-head h2,.hero h1{color:var(--title)}
