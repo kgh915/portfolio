@@ -13,7 +13,7 @@
 
 ## 1. 현재 상태
 - **실제 사이트(main)**: 2026-11-27 관리자 모드·통계·사용법 포함 배포(193432f). 합치기 전 백업 태그 `backup-before-merge-2026-11-27`(=f414b14)
-- **관리자 모드 작업 공간**: 브랜치 `admin-mode` (시작 전 백업 태그 `backup-before-admin-mode-2026-11-26`)
+- **관리자 모드 작업 공간**: 브랜치 `admin-mode`는 합친 뒤 **삭제함**(11-27, 마지막 상태 태그 `backup-admin-mode-branch-2026-11-27`). 아래 작업 공간 주소는 더 이상 쓰지 않음
   - 확인용 고정 주소(브랜치 주소, Vercel 로그인 필요): https://portfolio-git-admin-mode-kgh915.vercel.app/admin/
   - Vercel 비밀값 설정 완료(Production·Preview): `ADMIN_PASSWORD`(의뢰인이 정함), `GITHUB_TOKEN`(fine-grained, kgh915/portfolio만, Contents RW, 만료 없음)
 - 요청서(전체 계획): https://claude.ai/artifact/BeASGj8VNebxUAvFPxwZuE
@@ -44,7 +44,7 @@
 2. ~~4단계 통계~~ 완료. 이전 메모: Vercel Web Analytics 켜기(무료 월 5만 건, 1개월 보관) + 관리자 화면에 "이 브라우저는 통계에서 제외" 버튼 + 자체 클릭 카운터(무료 저장소) + 매주 메일(Resend 무료, 본인 이메일 — **받을 주소 의뢰인에게 확인**). 속도 영향 검토 후 보고
 3. **(자료 준비되면) 새 섹션 '기획 과정'** — 위치: 기획·출시 제품 바로 아래. A안 가로 흐름(기획 배경 → 스케치 → 시안 → 대표 제품 완성 → 파생 제품), 라인 3개: ① 골드바 감사패→골프 골드프레임 상패 ② 동자 무드등→카네이션 무드등 ③ 골드바 블랙카드→십이지신 골드바 카드 + ④ 우드 스탠드 감사패는 만들어 두고 숨김. 관리자에서 글·이미지·순서·숨기기 가능하게. **의뢰인이 자료 준비되면 말해 주기로 함**
 4. ~~5단계 사용 설명서~~ 완료(관리자 '사용법' 메뉴).: 로그인, 수정, 이미지, 되돌리기(태그·GitHub), 토큰/비밀번호 교체, 통계, 용량
-5. ~~합치기~~ 2026-11-27 완료(fast-forward). admin-mode 브랜치는 남아 있음(작업 공간 주소에서 저장하면 실제 사이트에 반영 안 됨 → 정리 여부 의뢰인에게 물어볼 것). 이전 메모:: 의뢰인 승인 후 admin-mode → main 병합, 배포 확인. 그 뒤 관리자 주소 = https://kimgeunha.vercel.app/admin/
+5. ~~합치기~~ 2026-11-27 완료(fast-forward). admin-mode 브랜치는 의뢰인 요청으로 삭제(태그 backup-admin-mode-branch-2026-11-27). 이전 메모:: 의뢰인 승인 후 admin-mode → main 병합, 배포 확인. 그 뒤 관리자 주소 = https://kimgeunha.vercel.app/admin/
 
 ## 4. 일하는 방식 (의뢰인 선호)
 - 비개발자. 한국어, 쉬운 말. 폴더·파일은 **찾기 전에 먼저 물어보기**
