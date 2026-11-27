@@ -120,5 +120,42 @@ async function readBody(req) {
   const chunks = []; for await (const c of req) chunks.push(c);
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
 }
-module.exports = { LOCAL, BRANCH, OWNER, REPO, isAuthed, makeSession, setSession, passwordOk, send, requireAuth,
+// ── 통계 저장소(Upstash Redis, Vercel에서 연결하면 값이 자동으로 들어옴) ─────────
+// 내 컴퓨터 시험에서는 임시 파일에 저장
+const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
+const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
+const kvReady = () => LOCAL || !!(KV_URL && KV_TOKEN);
+const LOCAL_KV = path.join(require("os").tmpdir(), "portfolio-stats-local.json");
+// cmds: [["HINCRBY", key, field, 1], ["HGETALL", key], ["EXPIRE", key, sec]] → 결과 배열
+async function kv(cmds) {
+  if (LOCAL) {
+    let db = {}; try { db = JSON.parse(fs.readFileSync(LOCAL_KV, "utf8")); } catch {}
+    const out = cmds.map(([c, k, f, n]) => {
+      c = c.toUpperCase();
+      if (c === "HINCRBY") { db[k] = db[k] || {}; db[k][f] = (db[k][f] || 0) + Number(n); return db[k][f]; }
+      if (c === "HGETALL") return Object.entries(db[k] || {}).flat().map(String);
+      return 1;
+    });
+    fs.writeFileSync(LOCAL_KV, JSON.stringify(db)); return out;
+  }
+  const r = await fetch(KV_URL.replace(/\/$/, "") + "/pipeline", { method: "POST", headers: { Authorization: "Bearer " + KV_TOKEN, "Content-Type": "application/json" }, body: JSON.stringify(cmds) });
+  if (!r.ok) throw new Error("통계 저장소 " + r.status);
+  return (await r.json()).map(x => x.result);
+}
+// 한국 날짜(YYYY-MM-DD), offset일 전
+function kstDay(offset = 0, from = Date.now()) { return new Date(from + 9 * 3600e3 - offset * 86400e3).toISOString().slice(0, 10); }
+// 여러 날의 통계 읽기 → [{day, v, c:{키:수}, r:{사이트:수}}]
+async function readDays(n, from = Date.now()) {
+  const days = Array.from({ length: n }, (_, i) => kstDay(n - 1 - i, from));
+  const res = await kv(days.map(d => ["HGETALL", "st:" + d]));
+  return days.map((day, i) => {
+    const a = res[i] || [], o = { day, v: 0, c: {}, r: {} };
+    for (let j = 0; j < a.length; j += 2) {
+      const f = a[j], n = Number(a[j + 1]) || 0;
+      if (f === "v") o.v = n; else if (f.startsWith("c:")) o.c[f.slice(2)] = n; else if (f.startsWith("r:")) o.r[f.slice(2)] = n;
+    }
+    return o;
+  });
+}
+module.exports = { kv, kvReady, kstDay, readDays, LOCAL, BRANCH, OWNER, REPO, isAuthed, makeSession, setSession, passwordOk, send, requireAuth,
   headSha, readFile, commitFiles, readBody, SESSION_HOURS, assetPathOk, uploadBlob, repoSizeMB };

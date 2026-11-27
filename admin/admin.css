@@ -115,3 +115,19 @@ input,textarea,select{font:inherit;color:inherit}
 .rowimg:not([src]),.rowimg[src=""]{height:90px}
 .repo{font-size:12px;color:var(--soft);background:var(--bg);border-radius:6px;padding:3px 8px}
 .repo.warn{color:#fff;background:var(--warn)}
+/* 통계 */
+.ranges{display:flex;gap:6px;margin-bottom:12px}
+.ranges .mini.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:2px}
+.kpi span{font-size:12px;color:var(--soft)} .kpi b{font-size:24px} .kpi em{font-style:normal;font-size:12px;color:var(--soft)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:150px;padding-top:6px}
+.bar{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0}
+.bar i{display:block;width:100%;max-width:34px;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
+.bar small{font-size:10px;color:var(--soft);white-space:nowrap}
+.ranks{display:grid;gap:6px}
+.rank{display:flex;align-items:center;gap:10px;padding:4px 0;border-bottom:1px solid var(--line)}
+.rank .num{font-size:12px;font-weight:700;color:var(--accent-deep);background:var(--mint);border-radius:6px;padding:2px 8px}
+.rank img,.rank .noimg{width:34px;height:34px;object-fit:cover;object-position:top;border-radius:5px;border:1px solid var(--line);background:#fafafa}
+.rank .ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:760px){.kpis{grid-template-columns:1fr}}

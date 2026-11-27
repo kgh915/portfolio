@@ -151,7 +151,7 @@ def dp_card(n,d):
     more=" more" if n>=DETAIL_INITIAL else ""
     img=f'<img src="{av(d["preview"])}" loading="lazy" alt="{html.escape(d["title"])} 상세페이지 미리보기">'
     if not d["pages"]:
-        return f'<div class="dpcard nodetail{more}">{img}</div>'
+        return f'<div class="dpcard nodetail{more}" data-k="{d["id"]}">{img}</div>'
     pages=html.escape(json.dumps([[av(p["src"]),p["w"],p["h"]] for p in d["pages"]]),quote=True)
     # 팝업 상단 메모(기여한 부분·기획 컨셉) — 둘 다 없으면 메모 영역 자체를 보이지 않음
     # 기여도: 100%인 역할은 한 배지로 합침(예: 기획/디자인 100%), 그 외(%가 다르거나 '업체제공' 등)는 각각 표시
@@ -165,7 +165,7 @@ def dp_card(n,d):
         else: badges.append({"t":f'{c["role"]}-{c.get("text","")}',"ext":1})
     if badges or d.get("tools") or d.get("colors") or d.get("concept"):
         note=' data-note="'+html.escape(json.dumps({"contrib":badges,"tools":d.get("tools") or [],"colors":d.get("colors") or [],"concept":d.get("concept") or ""},ensure_ascii=False),quote=True)+'"'
-    return (f'<button type="button" class="dpcard{more}" data-pages="{pages}" data-title="{html.escape(d["title"])}"{note}>'
+    return (f'<button type="button" class="dpcard{more}" data-k="{d["id"]}" data-pages="{pages}" data-title="{html.escape(d["title"])}"{note}>'
             f'{img}<span class="dpview">상세보기</span></button>')
 dp_html=(f'<div class="moregroup" data-limit="{DETAIL_INITIAL}"><div class="dpgrid">{"".join(dp_card(n,d) for n,d in enumerate(details))}</div>'
          f'{more_btn(len(details),DETAIL_INITIAL)}</div>')
@@ -380,6 +380,18 @@ document.querySelectorAll('.moregroup').forEach(g=>{
 '''
 
 # ── 페이지 고정 문구(제목·소개·프로필·About·푸터) — data/site.json의 texts ─────────
+# 방문·클릭 세기(4단계 통계) — 화면이 다 뜬 뒤 작은 신호만 보냄(navigator.sendBeacon, 쿠키·개인정보 없음).
+# 관리자 화면에서 '이 브라우저는 통계에서 제외'를 켜면(localStorage no-track) 세지 않음. 같은 탭에서 새로고침해도 방문은 1번만.
+TRACK_JS=("(function(){try{if(localStorage.getItem('no-track'))return;}catch(e){}"
+ "var send=function(o){try{navigator.sendBeacon('/api/track',JSON.stringify(o));}catch(e){}};"
+ "addEventListener('load',function(){setTimeout(function(){try{if(sessionStorage.getItem('vt'))return;sessionStorage.setItem('vt','1');}catch(e){}"
+ "var r='';try{var u=new URL(document.referrer);if(u.host!==location.host)r=u.hostname;}catch(e){}send({t:'v',r:r});},1500);});"
+ "var key=function(el){if(el.dataset.k)return el.dataset.k;var s=el.dataset.full||el.dataset.src||'';var m=s.match(/assets\\/([a-z]+\\d+(?:-[a-z0-9]+)?)/i);return m?m[1].replace(/-(thumb|still)$/,''):'';};"
+ "document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('a,.dpcard,.vt,.vmain,.tile,.prodimg,.aimedia,.morebtn');if(!t)return;var k='';"
+ "if(t.tagName==='A'){var h=t.getAttribute('href')||'';if(h.indexOf('mailto:')===0)k='mail';else if(h.indexOf('tel:')===0)k='tel';"
+ "else if(t.classList.contains('prodlink')){var c=t.closest('.prodcard');var im=c&&c.querySelector('.prodimg');k=im?'link-'+key(im):'';}}"
+ "else if(t.classList.contains('morebtn'))k='more';else k=key(t);if(k)send({t:'c',k:k.slice(0,40)});},true);})();")
+
 T=SITE["texts"]; C=T["contact"]; S=T["sections"]
 def esc(x): return html.escape(x,quote=False)
 def spans(items): return ''.join(f'<span>{esc(x)}</span>' for x in items)
@@ -767,6 +779,7 @@ lbvid.addEventListener('click',e=>e.stopPropagation());
 addEventListener('keydown',e=>{{if(!lb.classList.contains('on'))return;if(e.key==='Escape')close();else if(e.key==='ArrowLeft')show(gi-1);else if(e.key==='ArrowRight')show(gi+1);}});
 {DP_JS}
 </script>
+<script>{TRACK_JS}</script>
 </body></html>'''
 
 with open(os.path.join(OUT,"index.html"),"w",encoding="utf-8") as f:

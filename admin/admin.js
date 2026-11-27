@@ -351,6 +351,73 @@
     for (const p of S.products) if (!img(p.img)) miss.push("제품 '" + p.title + "' 이미지");
     return miss;
   }
+  // ── 통계 ───────────────────────────────────────────
+  function itemName(k) {
+    if (k === "mail") return "✉️ 이메일 클릭"; if (k === "tel") return "📞 전화번호 클릭"; if (k === "more") return "더보기 버튼";
+    if (k.startsWith("link-")) { const p = S.products.find(p => p.img === k.slice(5)); return "제품 판매 페이지 이동 · " + (p ? p.title : k.slice(5)); }
+    const d = D.find(d => d.id === k); if (d) return "상세페이지 · " + d.title;
+    const p = S.products.find(p => p.img === k); if (p) return "제품 · " + p.title;
+    const base = k.split("-")[0];
+    if (/^pk\d+/.test(k)) return "패키지 · " + (S.package_notes[base]?.title || k);
+    if (/^ed\d+/.test(k)) return "편집디자인 · " + k;
+    if (/^ph\d+/.test(k)) return "사진 · " + k;
+    const w = S.ai_works.find(w => (w.still || "").startsWith(base + "-")); if (w) return "AI 작업물 · " + w.title;
+    return k;
+  }
+  function itemThumb(k) {
+    const d = D.find(d => d.id === k); if (d) return img(d.preview);
+    if (k.startsWith("link-")) k = k.slice(5);
+    return img(k) || img(k.split("-")[0]) || img(k.split("-")[0] + "-still.jpg");
+  }
+  function trackToggle() {
+    const get = () => { try { return !!localStorage.getItem("no-track"); } catch { return false; } };
+    const btn = h("button", { class: "ghost", type: "button" });
+    const paint = () => { btn.textContent = get() ? "✅ 이 브라우저는 통계에서 제외 중 (누르면 다시 셈)" : "이 브라우저는 통계에서 제외하기"; };
+    btn.addEventListener("click", () => { try { get() ? localStorage.removeItem("no-track") : localStorage.setItem("no-track", "1"); } catch {} paint(); });
+    paint(); return btn;
+  }
+  function statsPanel() {
+    const box = h("div", {}, h("p", { class: "help" }, "불러오는 중…"));
+    const sum = (days, f) => days.reduce((a, d) => a + f(d), 0);
+    const merge = (days, key) => { const o = {}; for (const d of days) for (const [k, n] of Object.entries(d[key])) o[k] = (o[k] || 0) + n; return o; };
+    const top = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n);
+    const exclude = group("내 방문은 빼기", h("p", { class: "note" }, "직접 사이트를 볼 때 숫자가 늘지 않도록, 쓰시는 브라우저마다(맥 크롬·사파리, 휴대폰 등) 이 화면에서 한 번씩 눌러 주세요."), trackToggle());
+    api("stats").then(r => {
+      box.innerHTML = "";
+      if (!r.ready) { box.append(group("아직 준비 중이에요", h("p", {}, "통계 저장소(Upstash)를 연결하면 여기에 방문 수와 많이 본 작업이 나와요.")), exclude); return; }
+      let range = 7;
+      const view = h("div");
+      const draw = () => {
+        const days = r.days.slice(-range), prev = r.days.slice(-range * 2, -range);
+        const v = sum(days, d => d.v), pv = sum(prev, d => d.v), clicks = merge(days, "c"), refs = merge(days, "r");
+        const contact = (clicks.mail || 0) + (clicks.tel || 0);
+        const max = Math.max(1, ...days.map(d => d.v));
+        const works = top(Object.fromEntries(Object.entries(clicks).filter(([k]) => !["mail", "tel", "more"].includes(k))), 15);
+        view.innerHTML = "";
+        view.append(
+          h("div", { class: "kpis" },
+            h("div", { class: "kpi" }, h("span", {}, "방문"), h("b", {}, v + "회"), prev.length === range && pv ? h("em", {}, (v >= pv ? "▲ " : "▼ ") + Math.abs(v - pv) + " (이전 " + pv + ")") : null),
+            h("div", { class: "kpi" }, h("span", {}, "연락처 클릭"), h("b", {}, contact + "회"), h("em", {}, "이메일 " + (clicks.mail || 0) + " · 전화 " + (clicks.tel || 0))),
+            h("div", { class: "kpi" }, h("span", {}, "작업 클릭"), h("b", {}, sum(works, x => x[1]) + "회"))),
+          group("날짜별 방문", h("div", { class: "bars" }, ...days.map(d => h("div", { class: "bar", title: d.day + " · " + d.v + "회" },
+            h("i", { style: `height:${Math.round(d.v / max * 100)}%` }), h("small", {}, range <= 14 ? d.day.slice(5).replace("-", "/") : ""))))),
+          group("가장 많이 눌러 본 작업", works.length ? h("div", { class: "ranks" }, ...works.map(([k, n], i) => h("div", { class: "rank" },
+            h("span", { class: "num" }, i + 1), itemThumb(k) ? h("img", { src: itemThumb(k), alt: "" }) : h("span", { class: "noimg" }), h("span", { class: "ttl" }, itemName(k)), h("b", {}, n + "회")))) : h("p", { class: "note" }, "아직 없어요.")),
+          group("어디서 들어왔나요", Object.keys(refs).length ? h("div", { class: "ranks" }, ...top(refs, 10).map(([k, n]) => h("div", { class: "rank" }, h("span", { class: "ttl" }, k), h("b", {}, n + "회")))) :
+            h("p", { class: "note" }, "아직 없어요. (주소를 직접 입력하거나 즐겨찾기로 들어온 방문은 표시되지 않아요.)")));
+      };
+      const tabs = h("div", { class: "ranges" }, ...[[7, "최근 7일"], [28, "최근 4주"], [56, "최근 8주"]].map(([n, t]) => h("button", { class: "mini" + (n === range ? " on" : ""), type: "button",
+        onclick: e => { range = n; tabs.querySelectorAll("button").forEach(b => b.classList.remove("on")); e.target.classList.add("on"); draw(); } }, t)));
+      const mailBtn = h("button", { class: "ghost", type: "button", onclick: async () => {
+        if (!confirm("지난주 통계를 지금 메일로 보내 볼까요?")) return;
+        try { await api("weekly"); toast("메일을 보냈어요. 메일함을 확인해 주세요.", 5000); } catch (e) { alert(e.message); }
+      } }, "시험 메일 보내기");
+      box.append(h("p", { class: "help" }, "방문은 같은 사람이 같은 창에서 여러 번 새로고침해도 1번으로 세요. 검색 로봇은 빼고 셉니다. 매주 월요일 아침 8시에 지난주 요약을 메일로 보내 드려요."),
+        tabs, view, exclude, group("주간 메일", h("p", { class: "note" }, r.mail ? "메일 설정이 되어 있어요. 실제 사이트(합친 뒤)에서 매주 자동으로 보내요." : "메일 설정(Resend)이 아직 없어요."), r.mail ? mailBtn : null));
+      draw();
+    }).catch(e => { box.innerHTML = ""; box.append(h("p", { class: "help" }, e.message)); });
+    return box;
+  }
   const group = (title, ...kids) => h("div", { class: "group" }, title ? h("h3", {}, title) : null, ...kids);
   const HTML_NOTE = "굵게 하려면 <b>글자</b>, 줄바꿈은 <br> 을 쓰면 돼요.";
 
@@ -449,6 +516,7 @@
         render: (x, b) => b.append(field("기간", x, "period", { note: "두 기간은 <br> 로 줄바꿈" }), field("회사", x, "company", { note: "작은 메모는 <span class='conote'>메모</span>" }),
           field("직무·직급", x, "role"), field("주요 업무", x, "desc", { type: "textarea", rows: 2 })) }),
     ]],
+    stats: ["📊 통계", () => [statsPanel()]],
     about: ["About·푸터", () => [
       group("About", field("큰 제목", T().about, "lead"), strList("문단", T().about, "paragraphs", { textarea: true, note: HTML_NOTE })),
       group("푸터", field("큰 문구", T().footer, "big", { type: "textarea", rows: 2, note: "줄바꿈은 <br>" }), field("직함", T().footer, "role"), field("저작권 문구", T().footer, "copy")),

@@ -2,5 +2,11 @@
   "framework": null,
   "installCommand": "",
   "buildCommand": "python3 build.py --dist",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "crons": [
+    {
+      "path": "/api/weekly",
+      "schedule": "0 23 * * 0"
+    }
+  ]
 }
