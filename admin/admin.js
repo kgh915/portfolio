@@ -12,11 +12,13 @@
     for (const k of kids.flat()) if (k !== null && k !== undefined && k !== false) el.append(k.nodeType ? k : String(k));
     return el;
   };
-  let S = null, D = null, SHA = null, ORIGINAL = "", ASSETS = [], TAB = "basic";
+  let S = null, D = null, SHA = null, ORIGINAL = "", ASSETS = [], DETAIL_DIRS = [], TAB = "basic";
+  const UPLOADS = new Map(), REMOVES = new Set(), PREVIEW = {}, OPEN = new WeakSet(); let BUSY = 0;
 
   // ── 이미지 경로 찾기(확장자 없는 이름 → 실제 파일) ─────────────
   function img(name) {
     if (!name) return "";
+    if (PREVIEW[name]) return PREVIEW[name];
     if (/\.(jpe?g|png|webp|gif|svg)$/i.test(name)) return "../assets/" + name;
     for (const ext of ["-thumb.jpg", ".webp", ".jpg", ".png"]) if (ASSETS.includes(name + ext)) return "../assets/" + name + ext;
     return "";
@@ -24,12 +26,13 @@
 
   // ── 변경 감지 ──────────────────────────────────────
   const snapshot = () => JSON.stringify([S, D]);
+  const isDirty = () => !!S && (snapshot() !== ORIGINAL || UPLOADS.size > 0 || REMOVES.size > 0);
   function changed() {
-    const dirty = snapshot() !== ORIGINAL;
-    $("#saveBtn").disabled = !dirty;
+    const dirty = isDirty();
+    $("#saveBtn").disabled = !dirty || BUSY > 0;
     const st = $("#status"); st.textContent = dirty ? "저장하지 않은 변경이 있어요" : ""; st.classList.toggle("warn", dirty);
   }
-  addEventListener("beforeunload", e => { if (S && snapshot() !== ORIGINAL) { e.preventDefault(); e.returnValue = ""; } });
+  addEventListener("beforeunload", e => { if (isDirty() || BUSY) { e.preventDefault(); e.returnValue = ""; } });
   function toast(msg, ms = 4000) { const t = h("div", { class: "toast" }, msg); document.body.append(t); setTimeout(() => t.remove(), ms); }
 
   // ── 입력 칸 만들기 ───────────────────────────────────
@@ -124,6 +127,103 @@
       onclick: () => { setHidden(arr, i, !on); changed(); rerender(); } }, on ? "보이기" : "숨기기");
   }
 
+  // ── 이미지 올리기 ───────────────────────────────────
+  // 고른 이미지를 브라우저에서 사이트에 필요한 크기(보이는 크기의 약 2배)로 줄여 1장씩 올림.
+  // 올린 이미지는 '저장'을 눌러야 글자 수정과 함께 사이트에 반영됨.
+  function pickFiles(multiple) {
+    return new Promise(res => {
+      const inp = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp,video/*", multiple: multiple || undefined });
+      inp.addEventListener("change", () => res([...inp.files])); inp.click();
+    });
+  }
+  function videoGuide(f) {
+    const mb = f.size / 1048576;
+    alert((mb > 30 ? `이 영상은 ${mb.toFixed(0)}MB라서 사이트가 느려질 수 있어요. HandBrake(무료 프로그램)로 'Fast 1080p30' 설정으로 줄이면 보통 10~20MB가 돼요.\n\n` : "") +
+      "영상은 용량이 커서 관리자 화면에서 바로 올릴 수 없어요.\n\n올리는 방법:\n1. github.com/kgh915/portfolio 접속 → assets 폴더\n2. Add file → Upload files → 영상 끌어다 놓기\n3. 파일 이름을 이미지와 맞추기(예: pk08-1.mp4)\n4. Commit changes\n\n어려우면 Claude에게 영상 파일을 알려 주세요.");
+  }
+  function loadImage(f) {
+    return new Promise((res, rej) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error(f.name + " 파일을 열 수 없어요.")); im.src = u; });
+  }
+  function hasAlpha(im, f) {
+    if (f.type === "image/jpeg") return false;
+    const c = document.createElement("canvas"); c.width = 96; c.height = Math.max(1, Math.round(96 * im.naturalHeight / im.naturalWidth));
+    const x = c.getContext("2d"); x.drawImage(im, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4) if (d[i] < 250) return true; return false;
+  }
+  // 줄이기: maxLong(긴 변) 또는 maxW(가로) 기준. sy·sh로 세로 일부분만 잘라 그릴 수 있음(상세페이지 자르기용)
+  function shrink(im, o = {}) {
+    const W = im.naturalWidth, H = im.naturalHeight;
+    let k = 1;
+    if (o.maxLong) k = Math.min(1, o.maxLong / Math.max(W, H));
+    if (o.maxW) k = Math.min(1, o.maxW / W);
+    if (o.minShort) k = Math.min(1, Math.max(o.minShort / Math.min(W, H), 0), o.capLong ? o.capLong / Math.max(W, H) : 1);
+    const sy = o.sy || 0, sh = o.sh || H;
+    const c = document.createElement("canvas"); c.width = Math.round(W * k); c.height = Math.round(sh * k);
+    const x = c.getContext("2d");
+    if (!o.png) { x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); }
+    x.imageSmoothingQuality = "high"; x.drawImage(im, 0, sy, W, sh, 0, 0, c.width, c.height);
+    return new Promise(res => c.toBlob(b => res({ blob: b, w: c.width, h: c.height }), o.png ? "image/png" : "image/jpeg", 0.86));
+  }
+  const b64 = blob => new Promise(res => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.readAsDataURL(blob); });
+  async function put(rel, out) {  // rel: assets/ 아래 경로
+    let { blob } = out;
+    if (blob.size > 3.3 * 1048576) throw new Error("줄인 뒤에도 이미지가 너무 커요. 조금 작은 이미지로 다시 골라 주세요.");
+    const r = await api("upload", { method: "POST", body: JSON.stringify({ path: "assets/" + rel, data: await b64(blob) }) });
+    UPLOADS.set("assets/" + rel, r.sha); REMOVES.delete("assets/" + rel);
+    PREVIEW[rel] = URL.createObjectURL(blob);
+    return out;
+  }
+  // 같은 이름의 다른 형식 파일(예: 예전 .webp)이 남아 있으면 사이트가 옛 이미지를 쓰므로 저장할 때 함께 지움
+  function dropOld(base, keep) {
+    for (const ext of [".png", ".webp", ".jpg", "-thumb.jpg"]) {
+      const f = base + ext; if (!keep.includes(f) && (ASSETS.includes(f) || UPLOADS.has("assets/" + f))) { REMOVES.add("assets/" + f); UPLOADS.delete("assets/" + f); }
+    }
+  }
+  // 다음 번호 이름(ph50, pk08 …) — 이미 있는 파일·목록·방금 올린 것과 겹치지 않게
+  function nextName(prefix, extra = []) {
+    let max = 0; const re = new RegExp("^" + prefix + "(\\d+)");
+    for (const n of [...ASSETS, ...extra, ...Object.keys(PREVIEW), ...[...UPLOADS.keys()].map(p => p.replace(/^assets\//, ""))]) { const m = re.exec(n); if (m) max = Math.max(max, +m[1]); }
+    return prefix + String(max + 1).padStart(2, "0");
+  }
+  // 진행 표시 + 실패 알림을 감싸는 공용 함수
+  async function work(label, fn) {
+    BUSY++; changed(); const st = $("#status"); st.textContent = label + "…"; st.classList.remove("warn");
+    try { await fn(m => { st.textContent = label + " " + m; }); toast("이미지를 올렸어요. '저장'을 눌러야 사이트에 반영돼요.", 5000); return true; }
+    catch (e) { alert(e.message); return false; }
+    finally { BUSY--; changed(); }
+  }
+  // 종류별 이미지 만들기 — 파일 이름(확장자 없는 base)으로 저장
+  const IMG = {
+    // 사진 촬영: 큰 이미지 jpg(긴 변 2200) + 목록용 작은 이미지
+    async photo(f, base) { const im = await loadImage(f); dropOld(base, [base + ".jpg", base + "-thumb.jpg"]);
+      await put(base + ".jpg", await shrink(im, { maxLong: 2200 })); const t = await put(base + "-thumb.jpg", await shrink(im, { minShort: 400, capLong: 900 })); PREVIEW[base] = PREVIEW[base + "-thumb.jpg"]; return t; },
+    // 패키지·편집: 투명 배경(누끼) PNG는 PNG로(긴 변 1600), 그 외는 jpg(긴 변 2200)
+    async viewer(f, base) { const im = await loadImage(f); const png = hasAlpha(im, f); const name = base + (png ? ".png" : ".jpg"); dropOld(base, [name]);
+      await put(name, await shrink(im, png ? { maxLong: 1600, png: true } : { maxLong: 2200 })); PREVIEW[base] = PREVIEW[name]; },
+    // 기획·출시 제품: jpg(긴 변 1000, 기존과 같은 크기)
+    async product(f, base) { const im = await loadImage(f); dropOld(base, [base + ".jpg"]); await put(base + ".jpg", await shrink(im, { maxLong: 1000 })); PREVIEW[base] = PREVIEW[base + ".jpg"]; },
+    // AI 콘셉트 이미지: 큰 이미지(긴 변 1600) + 작은 이미지(긴 변 700)
+    async ai(f, base) { const im = await loadImage(f); await put(base + ".jpg", await shrink(im, { maxLong: 1600 })); await put(base + "-thumb.jpg", await shrink(im, { maxLong: 700 })); },
+  };
+  // 상세페이지: 미리보기(가로 500) / 상세 이미지(가로 최대 860, 세로 4000px씩 잘라 01.jpg, 02.jpg …)
+  async function detailPreview(x, f) { const im = await loadImage(f); const p = `detail/${x.id}/preview.jpg`; await put(p, await shrink(im, { maxW: 500 })); x.preview = p; }
+  async function detailPages(x, files, step) {
+    files = [...files].sort((a, b) => a.name.localeCompare(b.name, "ko", { numeric: true }));
+    const old = (x.pages || []).map(p => "assets/" + p.src), pages = []; let n = 0;
+    for (const [fi, f] of files.entries()) {
+      const im = await loadImage(f); const W = im.naturalWidth, H = im.naturalHeight, k = Math.min(1, 860 / W), seg = Math.round(4000 / k);
+      for (let y = 0; y < H; y += seg) {
+        n++; step(`(${fi + 1}/${files.length}번째 파일, ${n}조각)`);
+        const src = `detail/${x.id}/${String(n).padStart(2, "0")}.jpg`; const out = await put(src, await shrink(im, { maxW: 860, sy: y, sh: Math.min(seg, H - y) }));
+        pages.push({ src, w: out.w, h: out.h });
+      }
+    }
+    for (const p of old) if (!pages.some(q => "assets/" + q.src === p)) { REMOVES.add(p); UPLOADS.delete(p); }
+    x.pages = pages;
+  }
+  function filesOnly(fs) { const v = fs.find(f => f.type.startsWith("video/")); if (v) { videoGuide(v); return fs.filter(f => !f.type.startsWith("video/")); } return fs; }
+  const upBtn = (label, onclick) => h("button", { class: "mini up", type: "button", onclick }, label);
+
   // 문자열 목록(배지·툴·문단 등)
   function strList(label, obj, key, o = {}) {
     const box = h("div", { class: "field" }, h("label", {}, label));
@@ -166,27 +266,30 @@
       arr.forEach((item, i) => {
         const body = h("div", { class: "item-body" });
         const hid = o.hide !== false && isHidden(item);
-        const card = h("div", { class: "item closed" + (hid ? " is-hidden" : "") });
+        const card = h("div", { class: "item" + (OPEN.has(item) ? "" : " closed") + (hid ? " is-hidden" : "") });
         const t = o.thumb ? o.thumb(item) : "";
         const g = o.fixed ? null : grip();
         const head = h("div", { class: "item-head" }, g,
           o.fixed ? h("span", { class: "num" }, i + 1) : numBadge(arr, i, render), t ? h("img", { class: "thumb", src: t, alt: "", loading: "lazy", draggable: "false" }) : null,
           h("span", { class: "ttl" }, hid ? h("span", { class: "hidtag" }, "숨김") : null, o.title(item, i) || "(제목 없음)"),
-          h("button", { class: "mini", onclick: () => card.classList.toggle("closed") }, "열기/닫기"),
+          h("button", { class: "mini", onclick: () => { card.classList.toggle("closed"); card.classList.contains("closed") ? OPEN.delete(item) : OPEN.add(item); } }, "열기/닫기"),
           o.hide === false ? null : hideBtn(arr, i, render),
           ...(o.fixed ? [] : moveBtns(arr, i, render)));
         o.render(item, body, i);
         card.append(head, body); wrap.append(card);
         if (g) dragSort(card, arr, i, render, g);
       });
-      if (o.add) wrap.append(h("button", { class: "mini add", onclick: () => { arr.push(o.add()); changed(); render(); wrap.lastElementChild.previousElementSibling?.classList.remove("closed"); } }, "+ 항목 추가"));
+      if (o.add) wrap.append(h("button", { class: "mini add", onclick: () => { const it = o.add(); arr.push(it); OPEN.add(it); changed(); render(); } }, o.addLabel || "+ 항목 추가"));
     };
+    wrap.rerender = render;
     render();
-    return o.fixed ? wrap : h("div", {}, h("div", { class: "note movehelp" }, "순서 바꾸기: 왼쪽 ⠿를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 바로 옮겨져요. '숨기기'는 사이트에서만 안 보이게 하고 자료는 남겨 둬요(다시 '보이기' 가능). '삭제'는 완전히 필요 없을 때만 쓰세요."), wrap);
+    return o.fixed || o.hide === false ? wrap : h("div", {}, h("div", { class: "note movehelp" }, "순서 바꾸기: 왼쪽 ⠿를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 바로 옮겨져요. '숨기기'는 사이트에서만 안 보이게 하고 자료는 남겨 둬요(다시 '보이기' 가능). '삭제'는 완전히 필요 없을 때만 쓰세요."), wrap);
   }
   // 이미지 순서(썸네일 칩) — 파일 이름 목록의 순서 변경·빼기
-  function chips(label, arr, note) {
+  // kind: 이미지 올리기 종류(photo·viewer·ai). o.prefix: 새 이름 앞글자, o.onAdd: 추가 후 할 일
+  function chips(label, arr, note, o = {}) {
     const box = h("div", { class: "field" }, h("label", {}, label), note ? h("div", { class: "note" }, note) : null,
+      o.kind ? h("div", { class: "note" }, "이미지는 고르면 사이트에 맞는 크기로 자동으로 줄여서 올려요. 올린 뒤 '저장'을 눌러야 사이트에 반영돼요.") : null,
       h("div", { class: "note" }, "순서 바꾸기: 이미지를 잡고 끌어서 옮기거나, 번호를 눌러 원하는 번호를 적으면 돼요. '숨기기'는 사이트에서만 안 보이게 하고, '삭제'는 완전히 필요 없을 때만 쓰세요."));
     const list = h("div", { class: "chips" }); box.append(list);
     const render = () => {
@@ -195,11 +298,52 @@
         const pic = h("img", { src: img(typeof name === "string" ? name : name.thumb), alt: "", loading: "lazy", draggable: "false", title: "잡고 끌어서 옮기기" });
         const chip = h("div", { class: "chip" + (isHidden(name) ? " is-hidden" : "") }, pic, isHidden(name) ? h("span", { class: "hidtag" }, "숨김") : null,
           h("span", { class: "id" }, numBadge(arr, i, render, "cnum"), " ", (typeof name === "string" ? name : name.full)),
-          h("div", { class: "btns" }, ...moveBtns(arr, i, render)), hideBtn(arr, i, render));
+          h("div", { class: "btns" }, ...moveBtns(arr, i, render)), hideBtn(arr, i, render),
+          o.kind ? upBtn("이미지 교체", async () => {
+            const [f] = filesOnly(await pickFiles(false)); if (!f) return;
+            const ok = await work("이미지 올리는 중", async () => {
+              if (o.kind === "ai") await IMG.ai(f, name.full.replace(/\.jpg$/, "")); else await IMG[o.kind](f, name);
+            });
+            if (ok) render();
+          }) : null);
         dragSort(chip, arr, i, render, pic, true); list.append(chip);
       });
+      if (o.kind) list.append(h("div", { class: "chip addchip" }, upBtn("+ 이미지 추가", async () => {
+        const fs = filesOnly(await pickFiles(true)); if (!fs.length) return;
+        const added = [];
+        await work("이미지 올리는 중", async step => {
+          for (const [k, f] of fs.entries()) {
+            step(`(${k + 1}/${fs.length})`);
+            if (o.kind === "ai") {
+              const base = nextName(o.prefix() + "-", arr.map(c => c.full)); await IMG.ai(f, base);
+              const it = { thumb: base + "-thumb.jpg", full: base + ".jpg" }; arr.push(it); added.push(it);
+            } else { const base = nextName(o.prefix, arr); await IMG[o.kind](f, base); arr.push(base); added.push(base); }
+          }
+        });
+        if (added.length) { changed(); o.onAdd ? o.onAdd(added) : render(); }
+      })));
     };
     render(); return box;
+  }
+  // 이미지 한 장 칸(미리보기 + 교체 버튼)
+  function imgRow(label, src, doUpload, after, note) {
+    const pic = h("img", { class: "rowimg", src: src() || "", alt: "" });
+    return h("div", { class: "field" }, h("label", {}, label), note ? h("div", { class: "note" }, note) : null,
+      h("div", { class: "imgrow" }, pic, upBtn(src() ? "이미지 교체" : "이미지 올리기", async () => {
+        const [f] = filesOnly(await pickFiles(false)); if (!f) return;
+        if (await work("이미지 올리는 중", () => doUpload(f))) { pic.src = src(); changed(); after && after(); }
+      })));
+  }
+  function nextDetailId() {
+    let max = 0; for (const n of [...D.map(d => d.id), ...DETAIL_DIRS, ...Object.keys(PREVIEW)]) { const m = /^(?:detail\/)?dp(\d+)/.exec(n); if (m) max = Math.max(max, +m[1]); }
+    return "dp" + String(max + 1).padStart(2, "0");
+  }
+  // 저장 전 확인: 이미지가 없는 새 항목
+  function missingImages() {
+    const miss = [];
+    for (const d of D) if (!d.preview) miss.push("상세페이지 '" + d.title + "' 미리보기 이미지");
+    for (const p of S.products) if (!img(p.img)) miss.push("제품 '" + p.title + "' 이미지");
+    return miss;
   }
   const group = (title, ...kids) => h("div", { class: "group" }, title ? h("h3", {}, title) : null, ...kids);
   const HTML_NOTE = "굵게 하려면 <b>글자</b>, 줄바꿈은 <br> 을 쓰면 돼요.";
@@ -236,7 +380,8 @@
     products: ["기획·출시 제품", () => [
       objList(S.products, { title: x => x.title, thumb: x => img(x.img),
         render: (x, b) => b.append(field("제품명", x, "title"), field("성과 배지", x, "achieve"), field("한 줄 소개", x, "concept", { type: "textarea", rows: 2 }),
-          field("실제 제품 링크", x, "url", { type: "url", note: "비워 두면 링크가 표시되지 않아요." }), field("이미지 파일 이름", x, "img", { note: "이미지 교체는 다음 단계에서 버튼으로 할 수 있게 돼요." })) }),
+          field("실제 제품 링크", x, "url", { type: "url", note: "비워 두면 링크가 표시되지 않아요." }), imgRow("제품 이미지", () => img(x.img), async f => IMG.product(f, x.img))),
+        add: () => ({ img: nextName("prod", S.products.map(p => p.img)), title: "새 제품", achieve: "", concept: "", url: "" }), addLabel: "+ 제품 추가" }),
     ]],
     project: ["셀프 디자인 프로젝트", () => {
       const p = S.project;
@@ -246,14 +391,25 @@
     ai: ["AI 활용 작업물", () => [
       objList(S.ai_works, { title: x => x.title, thumb: x => img(x.still),
         render: (x, b) => b.append(field("제목", x, "title"), field("컨셉", x, "concept", { type: "textarea" }), field("작업 방식", x, "flow", { type: "textarea", rows: 2 }),
-          strList("키워드", x, "keywords"), chips("콘셉트 이미지 순서", x.concepts, "그리드(여러 컷을 이어붙인) 이미지는 맨 뒤에 두는 게 원칙이에요.")) }),
+          strList("키워드", x, "keywords"), chips("콘셉트 이미지 순서", x.concepts || (x.concepts = []), "그리드(여러 컷을 이어붙인) 이미지는 맨 뒤에 두는 게 원칙이에요.",
+            { kind: "ai", prefix: () => (x.still || x.img || "ai").replace(/-still.*|\..*$/, "") })) }),
     ]],
     detail: ["상세페이지", () => [
       group("목록 설정", field("처음 보일 미리보기 개수", S.settings, "detail_initial", { type: "number", min: 1, note: "화면 열 개수에 맞춰 마지막 줄이 꽉 차도록 자동으로 조금 늘어날 수 있어요." })),
       h("p", { class: "help" }, "상세페이지가 없는 작업(미리보기만 있는 것)은 목록 맨 뒤에 두세요."),
       objList(D, { title: x => x.title + (x.pages?.length ? "" : "  · 미리보기만"), thumb: x => img(x.preview),
+        add: () => ({ id: nextDetailId(), title: "새 상세페이지", preview: "", pages: [], contrib: [{ role: "기획", pct: 100 }, { role: "디자인", pct: 100 }], tools: ["Adobe Photoshop"], colors: [], concept: "" }),
+        addLabel: "+ 상세페이지 추가",
         render: (x, b) => {
           b.append(field("작업명", x, "title"));
+          const reList = () => { const w = b.closest(".items"); w && w.rerender ? w.rerender() : renderPanel(); };
+          b.append(imgRow("미리보기 이미지", () => img(x.preview), async f => detailPreview(x, f), reList, "목록에 보이는 이미지예요. 가로 500px로 줄여서 올려요."));
+          b.append(h("div", { class: "field" }, h("label", {}, "상세 이미지 (" + (x.pages?.length ? x.pages.length + "조각" : "없음") + ")"),
+            h("div", { class: "note" }, "상세페이지 전체 이미지를 골라 주세요(여러 장이면 파일 이름 순서대로 이어져요). 가로 860px로 줄이고 세로 4000px씩 잘라서 올려요. 다시 올리면 기존 상세 이미지를 모두 바꿔요."),
+            h("div", {}, upBtn(x.pages?.length ? "상세 이미지 다시 올리기" : "상세 이미지 올리기", async () => {
+              const fs = filesOnly(await pickFiles(true)); if (!fs.length) return;
+              if (await work("상세 이미지 올리는 중", step => detailPages(x, fs, step))) { changed(); reList(); }
+            }))));
           if (!x.pages?.length) return;
           const cs = x.contrib || (x.contrib = []);
           b.append(h("div", { class: "field" }, h("label", {}, "기여도"), h("div", { class: "note" }, "100%인 역할은 사이트에서 '기획·디자인 100%'처럼 자동으로 합쳐져요. %가 아닌 경우(업체제공 등)는 % 칸을 비우고 표시 문구를 쓰세요."),
@@ -263,7 +419,11 @@
         } }),
     ]],
     package: ["패키지", () => [
-      chips("패키지 순서", S.package),
+      chips("패키지 순서", S.package, "", { kind: "viewer", prefix: "pk", onAdd: added => {
+        for (const id of added) S.package_notes[id] ||= { title: "새 패키지", shot: false, colors: [], concept: "" };
+        changed(); renderPanel(); toast("아래에 새 패키지 설명 칸이 생겼어요. 작업명·컨셉을 적어 주세요.", 5000);
+      } }),
+      h("p", { class: "help" }, "패키지 영상(mp4)은 용량이 커서 이 화면에서 올릴 수 없어요. 영상을 고르면 올리는 방법을 알려 드려요."),
       strList("공통 사용툴", S, "package_tools"),
       ...S.package.filter(id => S.package_notes[id]).map(id => {
         const n = S.package_notes[id];
@@ -271,10 +431,10 @@
           field("기획 컨셉", n, "concept", { type: "textarea", rows: 4 }));
       }),
     ]],
-    editorial: ["편집디자인", () => [chips("편집디자인 순서", S.editorial)]],
+    editorial: ["편집디자인", () => [chips("편집디자인 순서", S.editorial, "", { kind: "viewer", prefix: "ed" })]],
     photo: ["사진 촬영", () => [
       group("목록 설정", field("처음 보일 사진 개수", S.settings, "photo_initial", { type: "number", min: 1 })),
-      chips("사진 순서", S.photo),
+      chips("사진 순서", S.photo, "", { kind: "photo", prefix: "ph" }),
     ]],
     career: ["경력", () => [
       objList(S.career, { title: x => x.period.replace(/<br>/g, " / ") + "  " + x.company.replace(/<[^>]+>/g, ""), add: () => ({ period: "", company: "", role: "", desc: "" }),
@@ -304,22 +464,37 @@
     if (!r.ok) { const e = new Error(j.error || "요청 실패 (" + r.status + ")"); e.status = r.status; throw e; }
     return j;
   }
+  // 저장소 용량 — GitHub 권장 1GB 이하. 800MB 넘으면 주황색 경고
+  function showRepo(mb) {
+    const el = $("#repo"); if (mb == null) return;
+    el.hidden = false; el.textContent = "저장소 " + (mb >= 1000 ? (mb / 1024).toFixed(2) + "GB" : mb + "MB") + " / 1GB";
+    el.title = "GitHub 저장소 용량(권장 1GB 이하). 이미지를 올릴수록 늘어나요. 지운 이미지도 기록으로 남아서 용량은 줄지 않아요.";
+    el.classList.toggle("warn", mb > 800);
+  }
   async function load() {
     const [c, m] = await Promise.all([api("content"), fetch("manifest.json").then(r => r.ok ? r.json() : { assets: [] }).catch(() => ({ assets: [] }))]);
-    S = c.site; D = c.details; SHA = c.sha; ASSETS = m.assets || []; ORIGINAL = snapshot();
+    S = c.site; D = c.details; SHA = c.sha; ASSETS = m.assets || []; DETAIL_DIRS = m.detail_dirs || []; ORIGINAL = snapshot();
+    showRepo(c.repoMB);
     $("#branch").textContent = c.sha === "local" ? "내 컴퓨터 시험" : c.branch === "main" ? "실제 사이트" : "작업 공간: " + c.branch;
     $("#login").hidden = true; $("#app").hidden = false; renderTabs(); renderPanel(); changed();
   }
   $("#saveBtn").addEventListener("click", async () => {
+    if (BUSY) return;
+    const miss = missingImages();
+    if (miss.length) { alert("이미지가 아직 없는 항목이 있어요. 이미지를 올리거나 항목을 삭제한 뒤 저장해 주세요.\n\n- " + miss.join("\n- ")); return; }
     const btn = $("#saveBtn"); btn.disabled = true; $("#status").textContent = "저장 중…";
     try {
-      const r = await api("save", { method: "POST", body: JSON.stringify({ site: S, details: D, sha: SHA, summary: TABS[TAB][0] }) });
+      const uploads = [...UPLOADS].map(([path, sha]) => ({ path, sha })), removes = [...REMOVES];
+      const r = await api("save", { method: "POST", body: JSON.stringify({ site: S, details: D, sha: SHA, summary: TABS[TAB][0] + (uploads.length ? ` (이미지 ${uploads.length}개)` : ""), uploads, removes }) });
+      for (const u of uploads) { const n = u.path.replace(/^assets\//, ""); if (!n.includes("/") && !ASSETS.includes(n)) ASSETS.push(n); }
+      for (const p of removes) { const n = p.replace(/^assets\//, ""); ASSETS = ASSETS.filter(a => a !== n); }
+      UPLOADS.clear(); REMOVES.clear(); showRepo(r.repoMB);
       SHA = r.sha; ORIGINAL = snapshot(); changed();
       toast("저장했어요! 약 1분 뒤 사이트에 반영돼요.", 6000);
     } catch (e) { $("#status").textContent = e.message; $("#status").classList.add("warn"); btn.disabled = false; if (e.status === 401) location.reload(); }
   });
   $("#logoutBtn").addEventListener("click", async () => {
-    if (snapshot() !== ORIGINAL && !confirm("저장하지 않은 변경이 있어요. 그래도 로그아웃할까요?")) return;
+    if (isDirty() && !confirm("저장하지 않은 변경이 있어요. 그래도 로그아웃할까요?")) return;
     await api("login", { method: "DELETE" }).catch(() => {}); ORIGINAL = snapshot(); location.reload();
   });
   $("#loginForm").addEventListener("submit", async e => {

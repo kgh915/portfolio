@@ -42,7 +42,7 @@ detail_desc=SITE["detail_desc"]
 # 목록 항목: {"hidden": true} / 이미지 이름 목록(패키지·편집·사진): site.json의 hidden_images에 이름이 있으면 숨김
 HIDDEN_IMAGES=set(SITE.get("hidden_images") or [])
 def vis(xs): return [x for x in xs if not (isinstance(x,dict) and x.get("hidden")) and not (isinstance(x,str) and x in HIDDEN_IMAGES)]
-details=vis(details)
+details=[d for d in vis(details) if os.path.exists(os.path.join(OUT,"assets",d["preview"]))]  # 미리보기 이미지가 아직 없으면(올리는 중) 건너뜀
 package=vis(SITE["package"])      # 패키지 코너 순서(3D 목업 영상 pk01-1 등은 숨김 — 파일만 남아 있음)
 editorial=vis(SITE["editorial"])
 photo=vis(SITE["photo"])          # 사진 촬영 순서(ph01~)
@@ -776,7 +776,9 @@ with open(os.path.join(OUT,"index.html"),"w",encoding="utf-8") as f:
 if os.path.isdir(os.path.join(OUT,"admin")):
     files=sorted(f for f in os.listdir(os.path.join(OUT,"assets")) if not f.startswith(".") and os.path.isfile(os.path.join(OUT,"assets",f)))
     with open(os.path.join(OUT,"admin","manifest.json"),"w",encoding="utf-8") as f:
-        json.dump({"assets":files},f,ensure_ascii=False)
+        ddir=os.path.join(OUT,"assets","detail")
+        dirs=sorted(x for x in os.listdir(ddir) if os.path.isdir(os.path.join(ddir,x))) if os.path.isdir(ddir) else []
+        json.dump({"assets":files,"detail_dirs":dirs},f,ensure_ascii=False)
 print("built single-page index.html")
 
 # ── 배포용 폴더(dist) 만들기 ───────────────────────────────────────────

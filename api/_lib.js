@@ -68,11 +68,30 @@ async function readFile(p, ref) {
   if (LOCAL) return fs.readFileSync(path.join(ROOT, p), "utf8");
   return gh("/contents/" + p + "?ref=" + ref, { raw: true, headers: { Accept: "application/vnd.github.raw+json" } });
 }
-// files: [{path, content (utf8 text) | base64}] 를 한 번의 커밋으로 저장
+// 관리자 화면이 올리거나 지울 수 있는 파일: assets/ 아래 jpg·png만 (상위 폴더로 나가는 경로 금지)
+function assetPathOk(p) {
+  return typeof p === "string" && p.length < 120 && /^assets\/[A-Za-z0-9_\-]+(\/[A-Za-z0-9_\-]+)*\.(jpg|png|webp)$/.test(p) && !p.includes("..") && !p.startsWith("assets/_orig_big");
+}
+// 이미지 1장을 GitHub에 blob으로만 올려 두고 sha를 돌려줌(커밋은 저장할 때). 내 컴퓨터 시험에서는 파일을 바로 씀.
+async function uploadBlob(p, base64) {
+  if (LOCAL) {
+    const full = path.join(ROOT, p); fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, Buffer.from(base64, "base64")); return "local";
+  }
+  return (await gh("/git/blobs", { method: "POST", body: JSON.stringify({ content: base64, encoding: "base64" }) })).sha;
+}
+async function repoSizeMB() {
+  if (LOCAL) return null;
+  try { return Math.round((await gh("")).size / 1024); } catch { return null; }
+}
+// files: [{path, content (utf8 text) | base64 | sha(미리 올린 blob) | remove:true}] 를 한 번의 커밋으로 저장
 async function commitFiles(files, message, expectSha) {
   if (LOCAL) {
     for (const f of files) {
-      const full = path.join(ROOT, f.path); fs.mkdirSync(path.dirname(full), { recursive: true });
+      const full = path.join(ROOT, f.path);
+      if (f.remove) { fs.rmSync(full, { force: true }); continue; }
+      if (f.sha) continue;  // 올릴 때 이미 파일로 씀
+      fs.mkdirSync(path.dirname(full), { recursive: true });
       fs.writeFileSync(full, f.base64 ? Buffer.from(f.base64, "base64") : f.content);
     }
     require("child_process").execSync("python3 build.py", { cwd: ROOT });
@@ -85,6 +104,8 @@ async function commitFiles(files, message, expectSha) {
   const baseTree = (await gh("/git/commits/" + head)).tree.sha;
   const tree = [];
   for (const f of files) {
+    if (f.remove) { tree.push({ path: f.path, mode: "100644", type: "blob", sha: null }); continue; }
+    if (f.sha) { tree.push({ path: f.path, mode: "100644", type: "blob", sha: f.sha }); continue; }
     const blob = await gh("/git/blobs", { method: "POST", body: JSON.stringify(
       f.base64 ? { content: f.base64, encoding: "base64" } : { content: f.content, encoding: "utf-8" }) });
     tree.push({ path: f.path, mode: "100644", type: "blob", sha: blob.sha });
@@ -100,4 +121,4 @@ async function readBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
 }
 module.exports = { LOCAL, BRANCH, OWNER, REPO, isAuthed, makeSession, setSession, passwordOk, send, requireAuth,
-  headSha, readFile, commitFiles, readBody, SESSION_HOURS };
+  headSha, readFile, commitFiles, readBody, SESSION_HOURS, assetPathOk, uploadBlob, repoSizeMB };

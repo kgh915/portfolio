@@ -104,3 +104,14 @@ input,textarea,select{font:inherit;color:inherit}
 .hidtag{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--soft);border-radius:5px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 .chip .hidtag{position:absolute;top:10px;left:10px;margin:0}
 .chip .mini.hide{width:100%;padding:3px 0}
+/* 이미지 올리기 */
+.mini.up{background:var(--mint);border-color:rgba(27,183,172,.4);color:var(--accent-deep);font-weight:700}
+.mini.up:hover{background:var(--accent);color:#fff}
+.chip .mini.up{width:100%;padding:3px 0;margin-top:3px}
+.chip.addchip{justify-content:center;min-height:150px;border-style:dashed;background:#FAFDFC}
+.chip.addchip .mini.up{padding:10px 0}
+.imgrow{display:flex;align-items:flex-end;gap:10px}
+.rowimg{width:120px;max-height:160px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fafafa}
+.rowimg:not([src]),.rowimg[src=""]{height:90px}
+.repo{font-size:12px;color:var(--soft);background:var(--bg);border-radius:6px;padding:3px 8px}
+.repo.warn{color:#fff;background:var(--warn)}
