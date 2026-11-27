@@ -448,3 +448,57 @@ img{display:block;max-width:100%}
 /* 섹션 제목 색: 굵고 큰 제목이 너무 검어 답답해 보인다는 피드백 → 진한 회색(민트 기운 살짝). 첫 화면 제목은 원래 색 유지 */
 :root{--title:#475351}
 .sec-head h2{color:var(--title);font-weight:700}
+/* ── 상품 기획 프로세스 보드(작업판) ── 조각을 책상 위에 펼쳐 놓은 듯 배치, 화면에 들어오면 순서대로 붙음 */
+.pblines{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin-top:8px}
+.pbline{min-width:0}
+.pbtitle{display:flex;align-items:center;gap:10px;font-size:19px;margin-bottom:16px}
+.pbtitle span{font-size:12px;font-weight:700;color:#fff;background:var(--accent);border-radius:6px;padding:2px 8px}
+.pboard{position:relative;height:620px;border-radius:18px;background-color:#F6FAF9;background-image:radial-gradient(rgba(23,48,46,.10) 1px,transparent 1.2px);background-size:22px 22px;border:1px solid var(--line)}
+.pbp{position:absolute;--r:0deg;opacity:0;transform:translateY(26px) rotate(var(--r)) scale(.95);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1.15);transition-delay:calc(var(--i)*150ms)}
+.pboard.on .pbp{opacity:1;transform:rotate(var(--r))}
+.pbp:hover{z-index:5}
+.pbstep{position:absolute;left:10px;top:-11px;z-index:2;font-size:11px;font-weight:700;color:var(--accent-deep);background:#fff;border:1px solid rgba(27,183,172,.45);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pbimg{background:#fff;padding:10px 10px 8px;border-radius:4px;box-shadow:0 14px 30px -14px rgba(23,48,46,.35);margin:0;position:relative}
+.pbimg::before{content:"";position:absolute;left:50%;top:-9px;width:64px;height:18px;transform:translateX(-50%) rotate(-2deg);background:rgba(27,183,172,.22);border-radius:2px}
+.pbimg img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:top;border-radius:2px;cursor:zoom-in}
+.pbimg figcaption{font-size:12px;color:var(--ink-soft);margin-top:7px;line-height:1.35}
+.pbph{aspect-ratio:4/3;border:1.5px dashed rgba(23,48,46,.25);border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:10px;background:repeating-linear-gradient(-45deg,#fafcfc 0 8px,#f2f6f5 8px 16px)}
+.pbph b{font-size:13px;color:var(--ink)} .pbph span{font-size:11.5px;color:var(--ink-soft);line-height:1.4}
+.pbtxt{border-radius:4px;box-shadow:0 14px 30px -16px rgba(23,48,46,.35);padding:16px 16px 14px;font-size:13.5px;line-height:1.55;color:var(--ink)}
+.pbidea{background:#FFF4B8;font-weight:600}
+.pbidea::after{content:"💡";position:absolute;right:10px;bottom:6px;font-size:18px}
+.pbmemo{background:#fff;background-image:repeating-linear-gradient(transparent 0 25px,rgba(27,183,172,.18) 25px 26px);background-position:0 16px;padding-top:16px}
+.pbmemo ul{list-style:none;padding:0;margin:0;display:grid;gap:0}
+.pbmemo li{line-height:26px}
+.pbmemo li::before{content:"– ";color:var(--accent-deep)}
+.pbresult{background:var(--accent);color:#fff;display:grid;gap:6px;text-align:center}
+.pbresult b{font-size:18px}
+.pbresult a{color:#fff;font-size:12.5px;text-decoration:underline;text-underline-offset:3px}
+/* 자리(PC) — 왼쪽 위에서 오른쪽 아래로 흐르도록 */
+.pb-idea{left:2%;top:5%;width:19%;--r:-3deg}
+.pb-research{left:23%;top:3%;width:21%;--r:2deg}
+.pb-rough{left:46%;top:6%;width:27%;--r:-1.5deg}
+.pb-memo{left:76%;top:3%;width:22%;--r:2.5deg}
+.pb-sample{left:4%;top:50%;width:20%;--r:1.5deg}
+.pb-launch{left:27%;top:44%;width:25%;--r:-2deg}
+.pb-derive{left:55%;top:50%;width:20%;--r:2.5deg}
+.pb-result{left:79%;top:60%;width:18%;--r:-2deg}
+.pb-launch .pbimg{outline:2px solid var(--accent);outline-offset:-2px}
+@media(max-width:1100px){.pboard{height:560px}.pbtxt{font-size:12.5px;padding:12px}.pbmemo li{line-height:22px}.pbmemo{background-image:repeating-linear-gradient(transparent 0 21px,rgba(27,183,172,.18) 21px 22px);background-position:0 12px}}
+/* 휴대폰·태블릿: 옆으로 넘겨 보는 한 줄 */
+@media(max-width:860px){
+  .pboard{height:auto;display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:26px 16px 18px;align-items:flex-start;-webkit-overflow-scrolling:touch}
+  .pbp{position:relative;left:auto!important;top:auto!important;flex:0 0 62%;max-width:260px;scroll-snap-align:center}
+  .pbp.pb-rough,.pbp.pb-launch{flex-basis:72%}
+}
+@media(prefers-reduced-motion:reduce){.pbp{transition:none;opacity:1;transform:rotate(var(--r))}}
+.pbtabs{display:flex;gap:10px;flex-wrap:wrap}
+.pbtab{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line-strong);border-radius:999px;padding:5px 16px 5px 5px;font:inherit;font-size:14px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.2s}
+.pbtab img{width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:top}
+.pbtab em{font-style:normal;font-size:11px;font-weight:700;color:var(--accent-deep);margin-right:6px}
+.pbtab:hover{border-color:var(--accent);color:var(--ink)}
+.pbtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pbtab.on em{color:#fff}
+@media(max-width:860px){.pbtabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.pbtab{flex:0 0 auto}}
+.sec-head h2.calli{font-family:"Nanum Pen Script",cursive;font-weight:400;font-size:clamp(40px,5vw,62px);line-height:1.05;color:var(--accent-deep);letter-spacing:0;margin-bottom:12px}
+.calli-sub{font-size:clamp(18px,2.2vw,22px);font-weight:700;color:var(--ink);margin-bottom:14px}

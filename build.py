@@ -409,9 +409,49 @@ mail_link=f'<a href="mailto:{C["email"]}">{esc(C["email"])}</a>'
 career_badges='\n'.join(f'      <span>{esc(x)}</span>' for x in S["career"]["badges"])
 about_html='\n'.join(f'    <p>{p}</p>' for p in T["about"]["paragraphs"])  # About 문단은 <br>·<b> 허용
 
+# ── 상품 기획 프로세스 보드 — 라인마다 '작업판' 하나(콜라주). 데이터: site.json "planning"
+# 조각 종류: research(자료 조사)·rough(러프 시안)·sample(샘플)·launch(출시)·derive(라인 확장) + 아이디어 메모지·제작 메모·출시 결과
+# 이미지가 아직 없으면 '여기에 넣을 자료' 안내 칸으로 표시(준비할 자료를 알려주는 자리)
+PB_GUIDE={"research":"참고한 이미지·경쟁 상품을 모은 캡처","rough":"일러스트 대지 캡처 (윤곽선 보기 ⌘+Y도 좋아요)","sample":"업체에서 받은 샘플·시제품 사진",
+          "launch":"출시 제품 사진","derive":"같은 라인으로 확장한 제품"}
+PB_STEP={"idea":"아이디어","research":"자료 조사","rough":"러프 시안","memo":"제작 메모","sample":"샘플","launch":"출시","derive":"라인 확장","result":"결과"}
+PB_ORDER=["idea","research","rough","memo","sample","launch","derive","result"]
+def pb_line(n,L):
+    pieces={}
+    if L.get("idea"): pieces["idea"]=f'<div class="pbtxt pbidea"><p>{esc(L["idea"])}</p></div>'
+    for it in L.get("items",[]):
+        k=it.get("kind")
+        if k not in PB_GUIDE or it.get("hidden"): continue
+        cap=esc(it.get("cap") or PB_STEP[k])
+        if it.get("img"):
+            src=av(it["img"])
+            pieces[k]=f'<figure class="pbimg" data-full="{src}"><img src="{src}" loading="lazy" alt="{cap}"><figcaption>{cap}</figcaption></figure>'
+        else:
+            pieces[k]=f'<figure class="pbimg pbempty"><div class="pbph"><b>{esc(PB_STEP[k])}</b><span>{esc(PB_GUIDE[k])}</span></div><figcaption>{cap}</figcaption></figure>'
+    if L.get("memo"): pieces["memo"]='<div class="pbtxt pbmemo"><ul>'+''.join(f'<li>{esc(m)}</li>' for m in L["memo"])+'</ul></div>'
+    if L.get("result") or L.get("link"):
+        link=f'<a href="{esc(L["link"])}" target="_blank" rel="noopener">판매 페이지 보기 ↗</a>' if L.get("link") else ''
+        pieces["result"]=f'<div class="pbtxt pbresult"><b>{esc(L.get("result") or "출시")}</b>{link}</div>'
+    cards=''.join(f'<div class="pbp pb-{k}" style="--i:{i}"><span class="pbstep">{i+1} · {PB_STEP[k]}</span>{pieces[k]}</div>'
+                  for i,k in enumerate([k for k in PB_ORDER if k in pieces]))
+    return f'<div class="pbline{" on" if n==1 else ""}" data-n="{n}"{"" if n==1 else " hidden"}><div class="pboard">{cards}</div></div>'
+PLANNING=SITE.get("planning") or {"lines":[]}
+_pl=vis(PLANNING.get("lines",[]))
+# 판은 한 번에 하나만 — 위 탭(라인 이름)을 누르면 바뀜(3개가 다 펼쳐지면 복잡하고 반복돼 보인다는 피드백)
+def _pb_tab(n,L):
+    launch=next((it for it in L.get("items",[]) if it.get("kind")=="launch" and it.get("img")),None)
+    th=f'<img src="{av(launch["img"])}" alt="" loading="lazy">' if launch else ''
+    return f'<button type="button" class="pbtab{" on" if n==1 else ""}" data-n="{n}" aria-pressed="{"true" if n==1 else "false"}">{th}<span><em>{n:02d}</em>{esc(L.get("title",""))}</span></button>'
+planning_html=((f'<div class="pbtabs" role="group" aria-label="상품 라인 선택">{"".join(_pb_tab(n,L) for n,L in enumerate(_pl,1))}</div>' if len(_pl)>1 else '')
+               +''.join(pb_line(n,L) for n,L in enumerate(_pl,1)))
+
 # ── 가운데 섹션(인터뷰~경력) — 순서·숨기기·배경색은 data/site.json의 "layout"(관리자 '섹션 순서·배경' 메뉴)
 # 맨 위(첫 화면·프로필)와 맨 아래(About·연락처)는 고정. 흰 배경 섹션끼리 붙으면 사이에 가는 구분선을 넣음.
 SECTION_BLOCKS={
+  "planning":lambda: f'''<section class="sec" id="planning"><div class="wrap">
+  <div class="sec-head reveal"><div class="en">{esc(S.get("planning",{}).get("en",""))}</div><h2 class="calli">{esc(S.get("planning",{}).get("title",""))}</h2>{f'<div class="calli-sub">{esc(S["planning"]["sub"])}</div>' if S.get("planning",{}).get("sub") else ""}<p>{S.get("planning",{}).get("desc","")}</p>{hint(S["planning"]) if "planning" in S else ""}</div>
+  <div class="pblines">{planning_html}</div>
+</div></section>''',
   "interview":lambda: f'''<section class="sec tight" id="interview"><div class="wrap">
   <div class="sec-head reveal"><div class="en">{esc(S["interview"]["en"])}</div><h2>{esc(S["interview"]["title"])}</h2><p>{S["interview"]["desc"]}</p></div>
   <div class="chatbox reveal" id="chatbox" data-qa='{chat_qa_json}'>
@@ -459,13 +499,17 @@ SECTION_BLOCKS={
   <div class="cv reveal">{cv_html}</div>
 </div></section>''',
 }
-SECTION_NAMES={"interview":"인터뷰","products":"기획·출시 제품","project":"셀프 편집기 도입 프로젝트","ai":"AI 활용 작업물","detail":"상세페이지","package":"패키지","editorial":"편집디자인","photo":"사진 촬영","career":"경력"}
-LAYOUT_DEFAULT=[{"key":"interview","bg":"#FFFFFF"},{"key":"products","bg":"#FFFFFF"},{"key":"project","bg":"#E7F6F4"},{"key":"ai","bg":"#FFFFFF"},
+SECTION_NAMES={"interview":"인터뷰","products":"기획·출시 제품","planning":"상품 기획 프로세스","project":"셀프 편집기 도입 프로젝트","ai":"AI 활용 작업물","detail":"상세페이지","package":"패키지","editorial":"편집디자인","photo":"사진 촬영","career":"경력"}
+LAYOUT_DEFAULT=[{"key":"interview","bg":"#FFFFFF"},{"key":"products","bg":"#FFFFFF"},{"key":"planning","bg":"#FFFFFF"},{"key":"project","bg":"#E7F6F4"},{"key":"ai","bg":"#FFFFFF"},
   {"key":"detail","bg":"#FFFFFF"},{"key":"package","bg":"#E7F6F4"},{"key":"editorial","bg":"#FFFFFF"},{"key":"photo","bg":"#E7F6F4"},{"key":"career","bg":"#FFFFFF"}]
 def section_layout():
     lay=[x for x in (SITE.get("layout") or LAYOUT_DEFAULT) if isinstance(x,dict) and x.get("key") in SECTION_BLOCKS]
-    seen={x["key"] for x in lay}
-    lay+= [x for x in LAYOUT_DEFAULT if x["key"] not in seen]   # 새로 생긴 섹션은 맨 뒤에
+    # 새로 생긴 섹션은 기본 순서에서 바로 앞 섹션 뒤에 끼워 넣음(없으면 맨 뒤)
+    for di,d in enumerate(LAYOUT_DEFAULT):
+        if any(x["key"]==d["key"] for x in lay): continue
+        prev=[LAYOUT_DEFAULT[j]["key"] for j in range(di-1,-1,-1)]
+        pos=next((lay.index(x)+1 for k in prev for x in lay if x["key"]==k),len(lay))
+        lay.insert(pos,dict(d))
     return lay
 def _white(bg): return (bg or "").strip().upper() in ("","#FFFFFF","#FFF")
 def middle_sections():
@@ -484,12 +528,18 @@ def middle_sections():
     if prev_white: out+=HR
     return out
 
+# 상품 기획 섹션 손글씨 제목(나눔손글씨 펜) — 제목에 쓰인 글자만 받아서 몇 KB. 섹션이 숨김이면 아예 안 받음
+import urllib.parse
+_pl_vis=any(x["key"]=="planning" and not x.get("hidden") for x in section_layout())
+_calli_txt="".join(sorted(set(S.get("planning",{}).get("title",""))))
+CALLI_LINK=(f'\n<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+            f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap&text={urllib.parse.quote(_calli_txt)}">') if _pl_vis and _calli_txt else ""
 html=f'''<!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(T["meta"]["title"])}</title>
 <meta name="description" content="{html.escape(T["meta"]["description"])}">
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v={FAVICON_VER}">
-<link rel="stylesheet" href="style.css?v={CSS_VER}">
+<link rel="stylesheet" href="style.css?v={CSS_VER}">{CALLI_LINK}
 </head><body>
 
 <nav class="nav" id="nav">
@@ -798,6 +848,18 @@ lbimg.addEventListener('click',e=>e.stopPropagation());
 lbvid.addEventListener('click',e=>e.stopPropagation());
 addEventListener('keydown',e=>{{if(!lb.classList.contains('on'))return;if(e.key==='Escape')close();else if(e.key==='ArrowLeft')show(gi-1);else if(e.key==='ArrowRight')show(gi+1);}});
 {DP_JS}
+// 상품 기획 보드: 화면에 들어오면 조각들이 순서대로 붙음. 위 탭으로 라인을 바꾸면 새 판이 다시 착착 붙음
+(()=>{{const wrap=document.querySelector('.pblines');if(!wrap)return;
+  const boards=[...wrap.querySelectorAll('.pbline')],tabs=[...wrap.querySelectorAll('.pbtab')];let seen=false;
+  const play=b=>{{b.classList.remove('on');void b.offsetWidth;b.classList.add('on');}};
+  const first=boards[0]&&boards[0].querySelector('.pboard');
+  if(first){{if(!('IntersectionObserver' in window)){{seen=true;first.classList.add('on');}}
+    else{{const io=new IntersectionObserver(es=>es.forEach(e=>{{if(e.isIntersecting){{seen=true;play(wrap.querySelector('.pbline.on .pboard'));io.disconnect();}}}}),{{threshold:.25}});io.observe(wrap);}}}}
+  tabs.forEach(t=>t.addEventListener('click',()=>{{
+    tabs.forEach(x=>{{const on=x===t;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);}});
+    boards.forEach(b=>{{const on=b.dataset.n===t.dataset.n;b.classList.toggle('on',on);b.hidden=!on;if(on&&seen)play(b.querySelector('.pboard'));}});
+  }}));
+}})();
 </script>
 <script>{TRACK_JS}</script>
 </body></html>'''

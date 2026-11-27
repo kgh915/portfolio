@@ -644,6 +644,12 @@
      "AI (이미지·영상)",
      "AI 콘텐츠 제작"
     ]
+   },
+   "planning": {
+    "en": "From Idea to Launch",
+    "title": "아이디어 통통! 상품기획 하는 디자이너!",
+    "desc": "(예시 문구) 디자인만이 아니라, ‘이런 상품이 있으면 좋겠다’는 아이디어에서 출발해 자료 조사, 시안, 샘플, 출시와 라인 확장까지 직접 이끈 상품들의 작업판입니다.",
+    "hint": "이미지를 클릭하면 크게 볼 수 있습니다."
    }
   },
   "about": {
@@ -716,5 +722,124 @@
    "key": "career",
    "bg": "#FFFFFF"
   }
- ]
+ ],
+ "planning": {
+  "lines": [
+   {
+    "title": "골드바 감사패 라인",
+    "idea": "(예시) 감사패에 진짜 금이 들어가면, 받는 사람이 훨씬 오래 간직하지 않을까?",
+    "memo": [
+     "(예시) 소재: 원목 + 0.1g 순금 골드바",
+     "(예시) 골드바 고정 방식 2안 비교",
+     "(예시) 샘플 2회 수정 (프레임 두께·각인 위치)",
+     "(예시) 단가·최소 주문 수량 업체 협의"
+    ],
+    "result": "출시 후 매출 TOP3",
+    "link": "https://csgold.co.kr/product/detail.html?product_no=3252&cate_no=109&display_group=1",
+    "items": [
+     {
+      "kind": "research",
+      "img": "",
+      "cap": "자료 조사"
+     },
+     {
+      "kind": "rough",
+      "img": "",
+      "cap": "일러스트 러프 시안"
+     },
+     {
+      "kind": "sample",
+      "img": "",
+      "cap": "샘플·시제품"
+     },
+     {
+      "kind": "launch",
+      "img": "prod01.jpg",
+      "cap": "출시 · 골드바 감사패"
+     },
+     {
+      "kind": "derive",
+      "img": "detail/dp08/preview.jpg",
+      "cap": "라인 확장 · 24K 순금 골프 상패"
+     }
+    ]
+   },
+   {
+    "title": "동자승 무드등 라인",
+    "idea": "(예시) 절 기념품은 많은데, 집에 두고 싶은 예쁜 불교 소품은 왜 없을까?",
+    "memo": [
+     "(예시) 타깃: 사찰 기념품·선물 수요",
+     "(예시) 조명 색온도·밝기 샘플 비교",
+     "(예시) 시즌 확장: 어버이날 카네이션 버전"
+    ],
+    "result": "",
+    "link": "",
+    "items": [
+     {
+      "kind": "research",
+      "img": "",
+      "cap": "자료 조사"
+     },
+     {
+      "kind": "rough",
+      "img": "",
+      "cap": "일러스트 러프 시안"
+     },
+     {
+      "kind": "sample",
+      "img": "",
+      "cap": "샘플·시제품"
+     },
+     {
+      "kind": "launch",
+      "img": "detail/dp19/preview.jpg",
+      "cap": "출시 · 연꽃·동자승 무드등"
+     },
+     {
+      "kind": "derive",
+      "img": "detail/dp40/preview.jpg",
+      "cap": "라인 확장 · 카네이션 무드등"
+     }
+    ]
+   },
+   {
+    "title": "골드바 카드 라인",
+    "idea": "(예시) 지갑에 넣고 다닐 수 있는 얇은 금 선물이 있으면 어떨까?",
+    "memo": [
+     "(예시) 카드 두께·골드바 크기 규격 검토",
+     "(예시) 블랙카드 → 띠별 디자인으로 확장",
+     "(예시) 케이스·포장까지 함께 기획"
+    ],
+    "result": "",
+    "link": "",
+    "items": [
+     {
+      "kind": "research",
+      "img": "",
+      "cap": "자료 조사"
+     },
+     {
+      "kind": "rough",
+      "img": "",
+      "cap": "일러스트 러프 시안"
+     },
+     {
+      "kind": "sample",
+      "img": "",
+      "cap": "샘플·시제품"
+     },
+     {
+      "kind": "launch",
+      "img": "detail/dp09/preview.jpg",
+      "cap": "출시 · 0.1g 골드바 골프 블랙카드"
+     },
+     {
+      "kind": "derive",
+      "img": "detail/dp01/preview.jpg",
+      "cap": "라인 확장 · 십이지신 골드바 카드"
+     }
+    ]
+   }
+  ]
+ }
 }

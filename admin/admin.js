@@ -353,15 +353,21 @@
   }
   // ── 섹션 순서·배경 ──────────────────────────────────
   // data/site.json의 layout: [{key, bg, hidden}] — build.py가 이 순서·배경색대로 가운데 섹션을 만듦
-  const SECTION_NAMES = { interview: "인터뷰", products: "기획·출시 제품", project: "셀프 편집기 도입 프로젝트", ai: "AI 활용 작업물", detail: "상세페이지",
+  const SECTION_NAMES = { interview: "인터뷰", products: "기획·출시 제품", planning: "상품 기획 프로세스", project: "셀프 편집기 도입 프로젝트", ai: "AI 활용 작업물", detail: "상세페이지",
     package: "패키지", editorial: "편집디자인", photo: "사진 촬영", career: "경력" };
-  const LAYOUT_DEFAULT = [["interview", "#FFFFFF"], ["products", "#FFFFFF"], ["project", "#E7F6F4"], ["ai", "#FFFFFF"], ["detail", "#FFFFFF"],
+  const LAYOUT_DEFAULT = [["interview", "#FFFFFF"], ["products", "#FFFFFF"], ["planning", "#FFFFFF"], ["project", "#E7F6F4"], ["ai", "#FFFFFF"], ["detail", "#FFFFFF"],
     ["package", "#E7F6F4"], ["editorial", "#FFFFFF"], ["photo", "#E7F6F4"], ["career", "#FFFFFF"]];
   const SWATCHES = [["흰색", "#FFFFFF"], ["민트", "#E7F6F4"], ["연회색", "#F4F6F6"], ["아이보리", "#FAF7F0"]];
   const isWhite = bg => ["", "#FFFFFF", "#FFF"].includes(String(bg || "").trim().toUpperCase());
   function ensureLayout() {
     if (!Array.isArray(S.layout)) S.layout = LAYOUT_DEFAULT.map(([key, bg]) => ({ key, bg }));
-    for (const [key, bg] of LAYOUT_DEFAULT) if (!S.layout.some(x => x.key === key)) S.layout.push({ key, bg });
+    // 새로 생긴 섹션은 기본 순서에서 바로 앞 섹션 뒤에 끼워 넣음(build.py와 같은 규칙)
+    LAYOUT_DEFAULT.forEach(([key, bg], di) => {
+      if (S.layout.some(x => x.key === key)) return;
+      let pos = S.layout.length;
+      for (let j = di - 1; j >= 0; j--) { const k = S.layout.findIndex(x => x.key === LAYOUT_DEFAULT[j][0]); if (k >= 0) { pos = k + 1; break; } }
+      S.layout.splice(pos, 0, { key, bg });
+    });
     return S.layout;
   }
   function layoutPanel() {
