@@ -1,5 +1,47 @@
 [
  {
+  "id": "dp52",
+  "title": "테스트",
+  "preview": "detail/dp52/preview.jpg",
+  "pages": [
+   {
+    "src": "detail/dp52/01.jpg",
+    "w": 860,
+    "h": 4000
+   },
+   {
+    "src": "detail/dp52/02.jpg",
+    "w": 860,
+    "h": 4000
+   },
+   {
+    "src": "detail/dp52/03.jpg",
+    "w": 860,
+    "h": 4000
+   },
+   {
+    "src": "detail/dp52/04.jpg",
+    "w": 860,
+    "h": 2295
+   }
+  ],
+  "contrib": [
+   {
+    "role": "기획",
+    "pct": 100
+   },
+   {
+    "role": "디자인",
+    "pct": 100
+   }
+  ],
+  "tools": [
+   "Adobe Photoshop"
+  ],
+  "colors": [],
+  "concept": ""
+ },
+ {
   "id": "dp07",
   "title": "0.1g 골드바 프리미엄 상패",
   "source": [
@@ -2917,47 +2959,5 @@
   "preview": "detail/old-ds05-1/preview.jpg",
   "preview_from": "기존 사이트 ds05_1",
   "pages": []
- },
- {
-  "id": "dp52",
-  "title": "테스트",
-  "preview": "detail/dp52/preview.jpg",
-  "pages": [
-   {
-    "src": "detail/dp52/01.jpg",
-    "w": 860,
-    "h": 4000
-   },
-   {
-    "src": "detail/dp52/02.jpg",
-    "w": 860,
-    "h": 4000
-   },
-   {
-    "src": "detail/dp52/03.jpg",
-    "w": 860,
-    "h": 4000
-   },
-   {
-    "src": "detail/dp52/04.jpg",
-    "w": 860,
-    "h": 2295
-   }
-  ],
-  "contrib": [
-   {
-    "role": "기획",
-    "pct": 100
-   },
-   {
-    "role": "디자인",
-    "pct": 100
-   }
-  ],
-  "tools": [
-   "Adobe Photoshop"
-  ],
-  "colors": [],
-  "concept": ""
  }
 ]
