@@ -449,8 +449,12 @@ planning_html=((f'<div class="pbtabs" role="group" aria-label="상품 라인 선
 # 맨 위(첫 화면·프로필)와 맨 아래(About·연락처)는 고정. 흰 배경 섹션끼리 붙으면 사이에 가는 구분선을 넣음.
 SECTION_BLOCKS={
   "planning":lambda: f'''<section class="sec" id="planning"><div class="wrap">
-  <div class="sec-head reveal"><div class="en">{esc(S.get("planning",{}).get("en",""))}</div><h2 class="calli">{esc(S.get("planning",{}).get("title",""))}</h2>{f'<div class="calli-sub">{esc(S["planning"]["sub"])}</div>' if S.get("planning",{}).get("sub") else ""}<p>{S.get("planning",{}).get("desc","")}</p>{hint(S["planning"]) if "planning" in S else ""}</div>
+  <div class="pbdesk reveal">
+  <div class="pbbar" aria-hidden="true"><i></i><i></i><i></i><span>작업보드 · 상품기획</span></div>
+  <div class="pbcanvas">
+  <div class="sec-head pbhead"><div class="en">{esc(S.get("planning",{}).get("en",""))}</div><h2 class="calli">{esc(S.get("planning",{}).get("title",""))}</h2>{f'<div class="calli-sub">{esc(S["planning"]["sub"])}</div>' if S.get("planning",{}).get("sub") else ""}<p>{S.get("planning",{}).get("desc","")}</p>{hint(S["planning"]) if "planning" in S else ""}</div>
   <div class="pblines">{planning_html}</div>
+  </div></div>
 </div></section>''',
   "interview":lambda: f'''<section class="sec tight" id="interview"><div class="wrap">
   <div class="sec-head reveal"><div class="en">{esc(S["interview"]["en"])}</div><h2>{esc(S["interview"]["title"])}</h2><p>{S["interview"]["desc"]}</p></div>
